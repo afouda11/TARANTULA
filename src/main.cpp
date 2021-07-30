@@ -36,7 +36,7 @@ int main()
     bool TWOSTATE    = read_bool_options("TWOSTATE"); //two level calculation on resonance with the first core excitation 
     bool STARK       = read_bool_options("STARK");
     bool WRITE_PULSE = read_bool_options("WRITE_PULSE");
-    //bool PAIR_SUM    = read_bool_options("PAIR_SUM");
+    bool PAIR_SUM    = read_bool_options("PAIR_SUM");
 
     if (TWOSTATE) {                   
         SUM       = false;
@@ -91,11 +91,6 @@ int main()
     double dt   = time_info[2] * 41.34137;
     int nt      = round((tend-tstart)/dt);
     int n_print = time_info[3]; //the every nth timestep that get printed
-    
-    std::vector<int> edge_model;       //N or O K-edge, 0 = N, 1 = O, for reasons specifc to NO
-    file2vector("inputs/edge_model.txt", edge_model);
-    int edge  = edge_model[0];
-    int model = edge_model[1];
 
     std::vector<int> n_states;       //read total number and number of valence states from file
     file2vector("inputs/n_states.txt", n_states);
@@ -198,13 +193,7 @@ int main()
         file2vector("inputs/decay_widths_photo_2.txt", decay_widths[1][1]);
     }
     cout << "Decay widths read\n" << endl;
-/*    for(int i = 0; i < 3; i++) {
-        cout << decay_widths[0][0][i] << endl;
-    }
-    for(int i = 0; i < 3; i++) {
-        cout << decay_widths[0][1][i] << endl;
-    }
-*/
+
     vector<vector<double> > polarization;
     if(!TWOPULSE) {
         polarization = vector<vector<double> >(1);
@@ -308,105 +297,47 @@ int main()
 
         cout << "RK4 Time:\n" << double( clock() - startTime ) / (double)CLOCKS_PER_SEC<< " seconds.\n" << endl;
 
-        //SUM the individual G, Fv, Fr, Iv, Ir, Id populatipons to group state types together to create a neater represenation
+        //SUM groups of states listed input/group_names.txt an dcorrepseonding _inde.txt files to create a neater represenation
         if (SUM) {
             //containers
 
-            group_sum(n_sum_type, nt, neqn, pt_sum_vec[ei], pt_vec_avg[ei], model);
-            cout << "Sum complete" << endl;
-
-            //WRITE SUMMED data to files
-            write_data("outputs/gnu/sum/"+convertInt(ei)+".txt",    nt, n_sum_type, n_print, tf_vec, pt_sum_vec[ei], norm_t_vec_avg[ei], true);
-            write_data("outputs/out/sum/"+convertInt(ei)+".txt",    nt, n_sum_type, n_print, tf_vec, pt_sum_vec[ei], norm_t_vec_avg[ei], false);
-            cout << "Summed data write to file time:\n" << double( clock() - startTime ) / (double)CLOCKS_PER_SEC<< "seconds.\n" << endl;
+            group_sum(n_sum_type, nt, neqn, pt_sum_vec[ei], pt_vec_avg[ei]);
             if(PERP_AVG) {
-                group_sum(n_sum_type, nt, neqn, pt_sum_vec_perp[ei], pt_vec_avg_perp[ei], model);
-                write_data("outputs/gnu/sum/"+convertInt(ei)+"_x.txt",    nt, n_sum_type, n_print, tf_vec, pt_sum_vec[ei], norm_t_vec_avg[ei], true);
-                write_data("outputs/out/sum/"+convertInt(ei)+"_x.txt",    nt, n_sum_type, n_print, tf_vec, pt_sum_vec[ei], norm_t_vec_avg[ei], false);
-                write_data("outputs/gnu/sum/"+convertInt(ei)+"_y.txt",    nt, n_sum_type, n_print, tf_vec, pt_sum_vec_perp[ei], norm_t_vec_avg_perp[ei], true);
-                write_data("outputs/out/sum/"+convertInt(ei)+"_y.txt",    nt, n_sum_type, n_print, tf_vec, pt_sum_vec_perp[ei], norm_t_vec_avg_perp[ei], false);
-                for(int i = 0; i<nt; i++) {
-                    for (int j = 0; j<n_sum_type; j++) {
-                        pt_sum_vec_perp[ei][j][i] = (pt_sum_vec_perp[ei][j][i] + pt_sum_vec[ei][j][i]) / 2.0;
-                    }
-                    norm_t_vec_avg_perp[ei][i] = (norm_t_vec_avg_perp[ei][i] + norm_t_vec_avg[ei][i]) / 2.0;
-                }
-                write_data("outputs/gnu/sum/"+convertInt(ei)+"_perp.txt",    nt, n_sum_type, n_print, tf_vec, pt_sum_vec_perp[ei], norm_t_vec_avg_perp[ei], true);
-                write_data("outputs/out/sum/"+convertInt(ei)+"_perp.txt",    nt, n_sum_type, n_print, tf_vec, pt_sum_vec_perp[ei], norm_t_vec_avg_perp[ei], false);
+                group_sum(n_sum_type, nt, neqn, pt_sum_vec_perp[ei], pt_vec_avg_perp[ei]);
             }
+            cout << "Sum complete" << endl;
         }
         
-        pt_vec = pt_vec_avg;
-        //sum the DEGENERATE pairs of pi-pi* val states only really relevant to nitric oxide
-       /*if (!TWOSTATE) {
-            degenerate_pair_sum(nt, model, edge, pt_vec[ei], pt_vec_avg[ei]);
+        //sum degenerate pairs of pi states, need to list the pairs in inputs/state_pairs.txt
+        if (!TWOSTATE) {
+            if (PAIR_SUM) {
+                pair_sum(nt, n_type, pt_vec[ei], pt_vec_avg[ei]);
+            }
+            else {
+                pt_vec = pt_vec_avg;
+            }       
         }
         if (TWOSTATE) {
-        else {
             pt_vec = pt_vec_avg;
-        }*/     
-        startTime = clock();
-        write_data("outputs/gnu/"+convertInt(ei)+".txt",    nt, n_type, n_print, tf_vec, pt_vec[ei],   norm_t_vec_avg[ei], true);
-        write_data("outputs/out/"+convertInt(ei)+".txt",    nt, n_type, n_print, tf_vec, pt_vec[ei],   norm_t_vec_avg[ei], false);
-        cout << "Individual state write to file time:\n" << double( clock() - startTime ) / (double)CLOCKS_PER_SEC<< "seconds.\n" << endl;
-        if(PERP_AVG) {
-            //degenerate_pair_sum(nt, model, edge, pt_vec_perp[ei], pt_vec_avg_perp[ei]);
-            pt_vec_perp = pt_vec_avg_perp;
-            write_data("outputs/gnu/"+convertInt(ei)+"_x.txt",    nt, n_type, n_print, tf_vec, pt_vec[ei],   norm_t_vec_avg[ei], true);
-            write_data("outputs/out/"+convertInt(ei)+"_x.txt",    nt, n_type, n_print, tf_vec, pt_vec[ei],   norm_t_vec_avg[ei], false);
-            write_data("outputs/gnu/"+convertInt(ei)+"_y.txt",    nt, n_type, n_print, tf_vec, pt_vec_perp[ei], norm_t_vec_avg_perp[ei], true);
-            write_data("outputs/out/"+convertInt(ei)+"_y.txt",    nt, n_type, n_print, tf_vec, pt_vec_perp[ei], norm_t_vec_avg_perp[ei], false);
-            for(int i = 0; i<nt; i++) {
-                for (int j = 0; j<n_type; j++) {
-                    pt_vec_perp[ei][j][i] = (pt_vec_perp[ei][j][i] + pt_vec[ei][j][i]) / 2.0;
-                }
-                norm_t_vec_avg_perp[ei][i] = (norm_t_vec_avg_perp[ei][i] + norm_t_vec_avg[ei][i]) /2.0;
-            }
-            write_data("outputs/gnu/"+convertInt(ei)+"_perp.txt",    nt, n_type, n_print, tf_vec, pt_vec_perp[ei], norm_t_vec_avg_perp[ei], true);
-            write_data("outputs/out/"+convertInt(ei)+"_perp.txt",    nt, n_type, n_print, tf_vec, pt_vec_perp[ei], norm_t_vec_avg_perp[ei], false);
         }
-    } 
-    //convert energy to ev for printing
-    for(int i = 0; i < n_photon_e; i++) wx[0][i] *=  27.2114;
+        if(PERP_AVG) { //twostate and perp_avg are not compatible together
+            if (PAIR_SUM) {
+                pair_sum(nt, n_type, pt_vec_perp[ei], pt_vec_avg_perp[ei]);
+            }      
+            else {
+                pt_vec_perp = pt_vec_avg_perp;
+            }      
+        }       
+        //WRITE SUMMED data to files
+
+        write_data_files(convertInt(ei), nt, n_type, n_sum_type, n_print, tf_vec, pt_vec[ei], pt_sum_vec[ei], pt_vec_perp[ei],
+        pt_sum_vec_perp[ei], norm_t_vec_avg[ei], norm_t_vec_avg_perp[ei], SUM, PERP_AVG);
+    }
 
     if (n_calc > 1) { //only for 1 pulse calc over mutiple intensities or energies
-        startTime = clock();
-        cout << "Writing energy/intensity variable data at t_final" << endl;
-        if(SUM and ECALC) {
-            write_data_variable("outputs/gnu/sum/variable/photon_energy.txt", n_calc, nt, n_sum_type, wx[0], pt_sum_vec, true); 
-            write_data_variable("outputs/out/sum/variable/photon_energy.txt", n_calc, nt, n_sum_type, wx[0], pt_sum_vec, false); 
-        }
-        if(SUM and !ECALC) {
-            write_data_variable("outputs/gnu/sum/variable/pulse_intensity.txt", n_calc, nt, n_sum_type, intensity[0], pt_sum_vec, true); 
-            write_data_variable("outputs/out/sum/variable/pulse_intensity.txt", n_calc, nt, n_sum_type, intensity[0], pt_sum_vec, false); 
-        }
-        if(ECALC) {
-            write_data_variable("outputs/gnu/variable/photon_energy.txt", n_calc, nt, n_type, wx[0], pt_vec, true); 
-            write_data_variable("outputs/out/variable/photon_energy.txt", n_calc, nt, n_type, wx[0], pt_vec, false); 
-        }
-        if(!ECALC) {
-            write_data_variable("outputs/gnu/variable/pulse_intensity.txt", n_calc, nt, n_type, intensity[0], pt_vec, true); 
-            write_data_variable("outputs/out/variable/pulse_intensity.txt", n_calc, nt, n_type, intensity[0], pt_vec, false); 
-        }
-        cout << "write to file time:\n" << double( clock() - startTime ) / (double)CLOCKS_PER_SEC<< "seconds.\n" << endl;
-        if(PERP_AVG) { //only averaged reuslt printed
-            if(SUM and ECALC) {
-                write_data_variable("outputs/gnu/sum/variable/photon_energy_perp.txt", n_calc, nt, n_sum_type, wx[0], pt_sum_vec_perp, true);
-                write_data_variable("outputs/out/sum/variable/photon_energy_perp.txt", n_calc, nt, n_sum_type, wx[0], pt_sum_vec_perp, true);
-            }
-            if(SUM and !ECALC) {
-                write_data_variable("outputs/gnu/sum/variable/pulse_intensity_perp.txt", n_calc, nt, n_sum_type, intensity[0], pt_sum_vec_perp, true); 
-                write_data_variable("outputs/out/sum/variable/pulse_intensity_perp.txt", n_calc, nt, n_sum_type, intensity[0], pt_sum_vec_perp, false); 
-            }
-            if(ECALC) {
-                write_data_variable("outputs/gnu/variable/photon_energy_perp.txt", n_calc, nt, n_type, wx[0], pt_vec_perp, true); 
-                write_data_variable("outputs/out/variable/photon_energy_perp.txt", n_calc, nt, n_type, wx[0], pt_vec_perp, false); 
-            }
-            if(!ECALC) {
-                write_data_variable("outputs/gnu/variable/pulse_intensity_perp.txt", n_calc, nt, n_type, intensity[0], pt_vec_perp, true); 
-                write_data_variable("outputs/out/variable/pulse_intensity_perp.txt", n_calc, nt, n_type, intensity[0], pt_vec_perp, false); 
-            }
-        }
+    write_data_variable_files(n_photon_e, n_calc, nt, n_type, n_sum_type, intensity[0], wx[0], pt_vec, pt_sum_vec,
+    pt_vec_perp, pt_sum_vec_perp, SUM, ECALC, PERP_AVG);
+        
     }
 
     cout << "Simulation complete! Nice warn.\n" << endl;

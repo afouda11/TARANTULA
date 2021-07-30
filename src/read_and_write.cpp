@@ -4,7 +4,6 @@
 #include <vector>
 #include <algorithm>
 #include <cmath>
-
 #include "vectypedef.hpp"
 #include "read_and_write.h"
 
@@ -83,6 +82,68 @@ arma::mat read_matrix(int n, std::string Diagonal, std::string Off_Diagonal) {
 	return STATES;
 }
 
+//sums groups of states indcated by index files
+void group_sum(int n_sum_type, int nt, int neqn, vector<vec1x >& pt_sum_vec, vector<vec1x > pt_vec) {
+
+    std::vector<string> group_names;
+    file2vector("inputs/group_names.txt", group_names);
+    std::vector<vector<int> > groups;
+    groups = vector<vector<int> >(n_sum_type-1);
+
+    for (int i = 0; i < n_sum_type-1; i++) {
+        file2vector("inputs/"+group_names[i]+"_index.txt",  groups[i]); 
+    }
+
+    for(int i = 0; i<nt; i++) {
+        for (int j = 0; j<neqn; j++) {
+
+            pt_sum_vec[0][i] = pt_vec[0][i];
+            for (int k = 0; k < n_sum_type-1; k++) {   
+
+                for (int l = 0; l < static_cast<int>(groups[k].size()); l++) {
+                        
+                    if (j == groups[k][l]) {
+
+                        pt_sum_vec[k+1][i] += pt_vec[j][i];
+
+                    }
+
+                }
+            }
+        }
+    }      
+
+    return;
+}               
+
+void pair_sum(int nt, int n_type, vector<vec1x >& pt_vec_, vector<vec1x > pt_vec_avg_)
+{
+ 	int	col1, col2;
+	std::vector<int>	one;
+	std::vector<int>	two;	
+	std::ifstream in("inputs/state_pairs.txt");
+	while(!in.eof()){
+		in >> col1;
+  		one.push_back(col1);
+		in >> col2;
+  		two.push_back(col2);
+	}
+
+    for(int i = 0; i<nt; i++) {
+        for(int j = 0; j < n_type; j++) {  
+            pt_vec_[j][i] = pt_vec_avg_[one[j]-1][i];
+            if (two[j] == 0) continue;
+            else {
+                
+                pt_vec_[j][i] += pt_vec_avg_[two[j]-1][i];
+
+            }      
+        }      
+
+    }
+    return;
+}
+
 void write_data(std::string outfilename, int nt, int neqn, int n_print, std::vector<double> tf_vec, std::vector<vec1x > pt_vec, std::vector<double> norm_t_vec, bool GNUPLOT_OUT) {
     
     //Write data to files
@@ -113,6 +174,48 @@ void write_data(std::string outfilename, int nt, int neqn, int n_print, std::vec
 
 }
 
+void write_data_files(string outfilename, int nt, int n_type, int n_sum_type, int n_print, vector<double> tf_vec, vector<vec1x> pt_vec, vector<vec1x> pt_sum_vec, vector<vec1x>& pt_vec_perp, vector<vec1x>& pt_sum_vec_perp, vector<double> norm_t_vec_avg, vector<double>& norm_t_vec_avg_perp, bool SUM, bool PERP_AVG) {
+   
+    if (SUM) {
+        string gnufilepath = "outputs/gnu/sum/"+outfilename;        
+        string outfilepath = "outputs/out/sum/"+outfilename;        
+        write_data(gnufilepath+".txt", nt, n_sum_type, n_print, tf_vec, pt_sum_vec, norm_t_vec_avg, true);
+        write_data(outfilepath+".txt", nt, n_sum_type, n_print, tf_vec, pt_sum_vec, norm_t_vec_avg, false);
+        if(PERP_AVG) {
+            write_data(gnufilepath+"_x.txt", nt, n_sum_type, n_print, tf_vec, pt_sum_vec, norm_t_vec_avg, true);
+            write_data(outfilepath+"_x.txt", nt, n_sum_type, n_print, tf_vec, pt_sum_vec, norm_t_vec_avg, false);
+            write_data(gnufilepath+"_y.txt", nt, n_sum_type, n_print, tf_vec, pt_sum_vec_perp, norm_t_vec_avg_perp, true);
+            write_data(outfilepath+"_y.txt", nt, n_sum_type, n_print, tf_vec, pt_sum_vec_perp, norm_t_vec_avg_perp, false);
+            for(int i = 0; i<nt; i++) {
+                for (int j = 0; j<n_sum_type; j++) {
+                  pt_sum_vec_perp[j][i] = (pt_sum_vec_perp[j][i] + pt_sum_vec[j][i]) / 2.0; 
+                }
+                norm_t_vec_avg_perp[i] = (norm_t_vec_avg_perp[i] + norm_t_vec_avg[i]) / 2.0;
+            }
+            write_data(gnufilepath+"_perp.txt", nt, n_sum_type, n_print, tf_vec, pt_sum_vec_perp, norm_t_vec_avg_perp, true);
+            write_data(outfilepath+"_perp.txt", nt, n_sum_type, n_print, tf_vec, pt_sum_vec_perp, norm_t_vec_avg_perp, false);
+        }
+    }
+    string gnufilepath = "outputs/gnu/"+outfilename;        
+    string outfilepath = "outputs/out/"+outfilename;        
+    write_data(gnufilepath+".txt", nt, n_type, n_print, tf_vec, pt_vec, norm_t_vec_avg, true);
+    write_data(outfilepath+".txt", nt, n_type, n_print, tf_vec, pt_vec, norm_t_vec_avg, false);
+    if(PERP_AVG) {
+        write_data(gnufilepath+"_x.txt", nt, n_type, n_print, tf_vec, pt_vec, norm_t_vec_avg, true);
+        write_data(outfilepath+"_x.txt", nt, n_type, n_print, tf_vec, pt_vec, norm_t_vec_avg, false);
+        write_data(gnufilepath+"_y.txt", nt, n_type, n_print, tf_vec, pt_vec_perp, norm_t_vec_avg_perp, true);
+        write_data(outfilepath+"_y.txt", nt, n_type, n_print, tf_vec, pt_vec_perp, norm_t_vec_avg_perp, false);
+        for(int i = 0; i<nt; i++) {
+            for (int j = 0; j<n_type; j++) {
+                 pt_vec_perp[j][i] = (pt_vec_perp[j][i] + pt_vec[j][i]) / 2.0;
+            }
+            norm_t_vec_avg_perp[i] = (norm_t_vec_avg_perp[i] + norm_t_vec_avg[i]) /2.0;
+        }
+        write_data(gnufilepath+"_perp.txt", nt, n_type, n_print, tf_vec, pt_vec_perp, norm_t_vec_avg_perp, true);
+        write_data(gnufilepath+"_perp.txt", nt, n_type, n_print, tf_vec, pt_vec_perp, norm_t_vec_avg_perp, false);         
+    }
+}
+
 void write_data_variable(std::string outfilename, int n_calc, int nt, int neqn, std::vector<double> variable, std::vector<vector<vec1x > > pt_vec, bool GNUPLOT_OUT) {
 
     //only works on avaraged over the orientation data
@@ -138,6 +241,59 @@ void write_data_variable(std::string outfilename, int n_calc, int nt, int neqn, 
 
 }       
 
+void write_data_variable_files(int n_photon_e, int n_calc, int nt, int n_type, int n_sum_type,
+vector<double> intensity, vector<double> wx, vector<vector<vec1x> > pt_vec, vector<vector<vec1x> > pt_sum_vec,
+vector<vector<vec1x> > pt_vec_perp, vector<vector<vec1x> > pt_sum_vec_perp, bool SUM, bool ECALC, bool PERP_AVG) {
+
+//convert energy to ev for printing
+for(int i = 0; i < n_photon_e; i++) wx[i] *=  27.2114;
+    
+    string gnufilepath = "outputs/gnu/sum/variable/";
+    string outfilepath = "outputs/out/sum/variable/";
+    cout << "Writing energy/intensity variable data at t_final\n" << endl;
+    if(SUM and ECALC) {
+        write_data_variable(gnufilepath+"photon_energy.txt", n_calc, nt, n_sum_type, wx, pt_sum_vec, true); 
+        write_data_variable(outfilepath+"photon_energy.txt", n_calc, nt, n_sum_type, wx, pt_sum_vec, false); 
+    }
+    if(SUM and !ECALC) {
+        write_data_variable(gnufilepath+"pulse_intensity.txt", n_calc, nt, n_sum_type, intensity, pt_sum_vec, true); 
+        write_data_variable(outfilepath+"pulse_intensity.txt", n_calc, nt, n_sum_type, intensity, pt_sum_vec, false); 
+    }
+    gnufilepath = "outputs/gnu/variable/";
+    outfilepath = "outputs/out/variable/";
+    if(ECALC) {
+        write_data_variable(gnufilepath+"photon_energy.txt", n_calc, nt, n_type, wx, pt_vec, true); 
+        write_data_variable(outfilepath+"photon_energy.txt", n_calc, nt, n_type, wx, pt_vec, false); 
+    }
+    if(!ECALC) {
+        write_data_variable(gnufilepath+"pulse_intensity.txt", n_calc, nt, n_type, intensity, pt_vec, true); 
+        write_data_variable(outfilepath+"pulse_intensity.txt", n_calc, nt, n_type, intensity, pt_vec, false); 
+    }
+    gnufilepath = "outputs/gnu/sum/variable/";
+    outfilepath = "outputs/out/sum/variable/";
+    if(PERP_AVG) { //only averaged reuslt printed
+        if(SUM and ECALC) {
+            write_data_variable(gnufilepath+"photon_energy_perp.txt", n_calc, nt, n_sum_type, wx, pt_sum_vec_perp, true);
+            write_data_variable(gnufilepath+"photon_energy_perp.txt", n_calc, nt, n_sum_type, wx, pt_sum_vec_perp, true);
+        }
+        if(SUM and !ECALC) {
+            write_data_variable(gnufilepath+"pulse_intensity_perp.txt", n_calc, nt, n_sum_type, intensity, pt_sum_vec_perp, true); 
+            write_data_variable(gnufilepath+"pulse_intensity_perp.txt", n_calc, nt, n_sum_type, intensity, pt_sum_vec_perp, false); 
+        }
+        gnufilepath = "outputs/gnu/variable/";
+        outfilepath = "outputs/out/variable/";
+        if(ECALC) {
+            write_data_variable(gnufilepath+"photon_energy_perp.txt", n_calc, nt, n_type, wx, pt_vec_perp, true); 
+            write_data_variable(gnufilepath+"photon_energy_perp.txt", n_calc, nt, n_type, wx, pt_vec_perp, false); 
+        }
+        if(!ECALC) {
+            write_data_variable(gnufilepath+"pulse_intensity_perp.txt", n_calc, nt, n_type, intensity, pt_vec_perp, true); 
+            write_data_variable(gnufilepath+"pulse_intensity_perp.txt", n_calc, nt, n_type, intensity, pt_vec_perp, false); 
+        }
+    }
+
+
+}    
 void write_field(std::string outfilename, int nt, int n_print, std::vector<double> tf_vec, std::vector<double> field) {
     
     //Write data to files
@@ -152,148 +308,6 @@ void write_field(std::string outfilename, int nt, int n_print, std::vector<doubl
     return;
 
 
-}
-
-//sums groups of states indcated by index files
-void group_sum(int n_type, int nt, int neqn, vector<vec1x >& pt_sum_vec, vector<vec1x > pt_vec, int model) {
- 
-    if(model == 0) {
-        
-        //final valence state index
-        std::vector<int> Fv_index;
-        file2vector("inputs/Fv_index.txt", Fv_index);
-
-        //final rydberg state index
-        std::vector<int> Fr_index;
-        file2vector("inputs/Fr_index.txt", Fr_index);
-
-        //intermediate valence state index
-        std::vector<int> Iv_index;
-        file2vector("inputs/Iv_index.txt", Iv_index);
-
-        //intermediate rydberg state index
-        std::vector<int> Ir_index;
-        file2vector("inputs/Ir_index.txt", Ir_index);
-
-        //intermediate double state index
-        std::vector<int> Id_index;
-        file2vector("inputs/Id_index.txt", Id_index);
-        cout << "Index's read" << endl;
-    
-        for(int i = 0; i<nt; i++) {
-            for (int j = 0; j<neqn; j++) {
-
-                pt_sum_vec[0][i] = pt_vec[0][i];
-
-                for (int Fv = 0; Fv < static_cast<int>(Fv_index.size()); Fv++) {
-                        
-                    if (j == Fv_index[Fv]) {
-
-                        pt_sum_vec[1][i] += pt_vec[j][i];
-
-                    }
-
-                }
-                for (int Fr = 0; Fr < static_cast<int>(Fr_index.size()); Fr++) {
-                        
-                    if (j == Fr_index[Fr]) {
-
-                        pt_sum_vec[2][i] += pt_vec[j][i];
-
-                    }
-
-                }
-                for (int Iv = 0; Iv < static_cast<int>(Iv_index.size()); Iv++) {
-                        
-                    if (j == Iv_index[Iv]) {
-
-                        pt_sum_vec[3][i] += pt_vec[j][i];
-
-                    }
-
-                }
-                for (int Ir = 0; Ir < static_cast<int>(Ir_index.size()); Ir++) {
-                        
-                    if (j == Ir_index[Ir]) {
-
-                        pt_sum_vec[4][i] += pt_vec[j][i];
-
-                    }
-
-                }
-                for (int Id = 0; Id < static_cast<int>(Id_index.size()); Id++) {
-                        
-                    if (j == Id_index[Id]) {
-
-                        pt_sum_vec[5][i] += pt_vec[j][i];
-    
-                    }
-                }
-            }
-        }
-    }
-    if(model == 1) {
-        //final valence state index
-        std::vector<int> Fv_index;
-        file2vector("inputs/Fv_index.txt", Fv_index);
-
-        //intermediate valence state index
-        std::vector<int> Iv_index;
-        file2vector("inputs/Iv_index.txt", Iv_index);
-
-        cout << "Index's read" << endl; 
-        for(int i = 0; i<nt; i++) {
-            for (int j = 0; j<neqn; j++) {
-
-                pt_sum_vec[0][i] = pt_vec[0][i];
-
-                for (int Fv = 0; Fv < static_cast<int>(Fv_index.size()); Fv++) {
-                        
-                    if (j == Fv_index[Fv]) {
-
-                        pt_sum_vec[1][i] += pt_vec[j][i];
-
-                    }
-
-                }
-                for (int Iv = 0; Iv < static_cast<int>(Iv_index.size()); Iv++) {
-                        
-                    if (j == Iv_index[Iv]) {
-
-                        pt_sum_vec[2][i] += pt_vec[j][i];
-
-                    }
-
-                }
-            }
-        }
-    }
-
-    return;
-}               
-
-void degenerate_pair_sum(int nt, int model, int edge, vector<vec1x >& pt_vec_, vector<vec1x > pt_vec_avg_)
-{
-    
-        //sum the DEGENERATE pairs of pi-pi* val states only really relevant to nitric oxide
-        for(int i = 0; i<nt; i++) {
-            //ground state
-          /*  pt_vec_[0][i]  = pt_vec_avg_[0][i];
-            pt_vec_[1][i]  = pt_vec_avg_[1][i];
-            pt_vec_[1][i] += pt_vec_avg_[2][i];
-            pt_vec_[2][i]  = pt_vec_avg_[3][i];
-            pt_vec_[2][i] += pt_vec_avg_[4][i];
-            pt_vec_[3][i]  = pt_vec_avg_[5][i];
-            pt_vec_[4][i]  = pt_vec_avg_[6][i];
-*/
-            pt_vec_[0][i]  = pt_vec_avg_[0][i];
-            pt_vec_[1][i]  = pt_vec_avg_[1][i];
-            pt_vec_[2][i]  = pt_vec_avg_[2][i];
-            pt_vec_[2][i] += pt_vec_avg_[3][i];
-            pt_vec_[3][i]  = pt_vec_avg_[4][i];
-            pt_vec_[4][i]  = pt_vec_avg_[5][i];
-        }      
-    return;
 }
 
 
