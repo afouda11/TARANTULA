@@ -329,14 +329,21 @@ int main()
             }      
         }       
         //WRITE SUMMED data to files
+      
+        FILEWRITER WRITEFILES;
+        
+         WRITEFILES.nt = nt;
+         WRITEFILES.n_type = n_type;
+         WRITEFILES.n_sum_type = n_sum_type;
+         WRITEFILES.n_print = n_print;
+         WRITEFILES.tf_vec = tf_vec;
 
-        write_data_files(convertInt(ei), nt, n_type, n_sum_type, n_print, tf_vec, pt_vec[ei], pt_sum_vec[ei], pt_vec_perp[ei],
-        pt_sum_vec_perp[ei], norm_t_vec_avg[ei], norm_t_vec_avg_perp[ei], SUM, PERP_AVG);
+        WRITEFILES.write_data_files(convertInt(ei), pt_vec[ei], pt_sum_vec[ei], pt_vec_perp[ei], pt_sum_vec_perp[ei], norm_t_vec_avg[ei], norm_t_vec_avg_perp[ei], SUM, PERP_AVG);
     }
 
+    FILEWRITER WRITEFILES;
     if (n_calc > 1) { //only for 1 pulse calc over mutiple intensities or energies
-    write_data_variable_files(n_photon_e, n_calc, nt, n_type, n_sum_type, intensity[0], wx[0], pt_vec, pt_sum_vec,
-    pt_vec_perp, pt_sum_vec_perp, SUM, ECALC, PERP_AVG);
+        WRITEFILES.write_data_variable_files(n_photon_e, n_calc, intensity[0], wx[0], pt_vec, pt_sum_vec, pt_vec_perp, pt_sum_vec_perp, SUM, ECALC, PERP_AVG);
         
     }
 
