@@ -179,7 +179,8 @@ int main()
         focal_volume_average(spot_size, field_strength[1], intensity[1], shell_sample); 
     }
 
-    std::vector<vector<vector<double> > > decay_widths; //auger decay widths and phtotoionisation cross-sections
+    //auger decay widths and phtotoionisation cross-sections
+    std::vector<vector<vector<double> > > decay_widths; 
     if(!TWOPULSE) {
         decay_widths = vector<vector<vector<double> > > (1, vector<vector<double> >(2));
         file2vector("inputs/decay_widths_auger_1.txt", decay_widths[0][0]);

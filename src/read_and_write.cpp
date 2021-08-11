@@ -131,11 +131,9 @@ void pair_sum(int nt, int n_type, vector<vec1x >& pt_vec_, vector<vec1x > pt_vec
 
     for(int i = 0; i<nt; i++) {
         for(int j = 0; j < n_type; j++) {  
-            pt_vec_[j][i] = pt_vec_avg_[one[j]-1][i];
-            if (two[j] == 0) continue;
-            else {
-                
-                pt_vec_[j][i] += pt_vec_avg_[two[j]-1][i];
+            pt_vec_[j][i] = pt_vec_avg_[one[j]][i];
+            if (two[j] > 0) {
+                pt_vec_[j][i] += pt_vec_avg_[two[j]][i];
 
             }      
         }      
@@ -148,7 +146,6 @@ FILEWRITER::FILEWRITER(void){
 }
 
 void FILEWRITER::write_data_files(string outfilename, vector<vec1x> pt_vec, vector<vec1x> pt_sum_vec, vector<vec1x>& pt_vec_perp, vector<vec1x>& pt_sum_vec_perp, vector<double> norm_t_vec_avg, vector<double>& norm_t_vec_avg_perp, bool SUM, bool PERP_AVG) {
-//void FILEWRITER::write_data_files(string outfilename, int nt, int n_type, int n_sum_type, int n_print, vector<double> tf_vec, vector<vec1x> pt_vec, vector<vec1x> pt_sum_vec, vector<vec1x>& pt_vec_perp, vector<vec1x>& pt_sum_vec_perp, vector<double> norm_t_vec_avg, vector<double>& norm_t_vec_avg_perp, bool SUM, bool PERP_AVG) {
    
     if (SUM) {
         string gnufilepath = "outputs/gnu/sum/"+outfilename;        
@@ -186,7 +183,7 @@ void FILEWRITER::write_data_files(string outfilename, vector<vec1x> pt_vec, vect
             norm_t_vec_avg_perp[i] = (norm_t_vec_avg_perp[i] + norm_t_vec_avg[i]) /2.0;
         }
         write_data(gnufilepath+"_perp.txt", n_type, pt_vec_perp, norm_t_vec_avg_perp, true);
-        write_data(gnufilepath+"_perp.txt", n_type, pt_vec_perp, norm_t_vec_avg_perp, false);         
+        write_data(outfilepath+"_perp.txt", n_type, pt_vec_perp, norm_t_vec_avg_perp, false);         
     }
 }
 
@@ -222,21 +219,21 @@ for(int i = 0; i < n_photon_e; i++) wx[i] *=  27.2114;
     if(PERP_AVG) { //only averaged reuslt printed
         if(SUM and ECALC) {
             write_data_variable(gnufilepath+"photon_energy_perp.txt", n_calc, n_sum_type, wx, pt_sum_vec_perp, true);
-            write_data_variable(gnufilepath+"photon_energy_perp.txt", n_calc, n_sum_type, wx, pt_sum_vec_perp, true);
+            write_data_variable(outfilepath+"photon_energy_perp.txt", n_calc, n_sum_type, wx, pt_sum_vec_perp, false);
         }
         if(SUM and !ECALC) {
             write_data_variable(gnufilepath+"pulse_intensity_perp.txt", n_calc, n_sum_type, intensity, pt_sum_vec_perp, true); 
-            write_data_variable(gnufilepath+"pulse_intensity_perp.txt", n_calc, n_sum_type, intensity, pt_sum_vec_perp, false); 
+            write_data_variable(outfilepath+"pulse_intensity_perp.txt", n_calc, n_sum_type, intensity, pt_sum_vec_perp, false); 
         }
         gnufilepath = "outputs/gnu/variable/";
         outfilepath = "outputs/out/variable/";
         if(ECALC) {
             write_data_variable(gnufilepath+"photon_energy_perp.txt", n_calc, n_type, wx, pt_vec_perp, true); 
-            write_data_variable(gnufilepath+"photon_energy_perp.txt", n_calc, n_type, wx, pt_vec_perp, false); 
+            write_data_variable(outfilepath+"photon_energy_perp.txt", n_calc, n_type, wx, pt_vec_perp, false); 
         }
         if(!ECALC) {
             write_data_variable(gnufilepath+"pulse_intensity_perp.txt", n_calc, n_type, intensity, pt_vec_perp, true); 
-            write_data_variable(gnufilepath+"pulse_intensity_perp.txt", n_calc, n_type, intensity, pt_vec_perp, false); 
+            write_data_variable(outfilepath+"pulse_intensity_perp.txt", n_calc, n_type, intensity, pt_vec_perp, false); 
         }
     }
 
