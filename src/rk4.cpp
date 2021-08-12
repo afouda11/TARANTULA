@@ -16,7 +16,7 @@
 #include <omp.h>
 #endif
 
-void rk4(int neqn, int nval, vec1x & y, double t0, double tf, vector<arma::mat> Matrix, vector<vector<double> >
+void rk4(int neqn, vec1x & y, double t0, double tf, vector<arma::mat> Matrix, vector<vector<double> >
 polarization, vector<double> Et, vector<double> wx, vector<vector<vector<double> > > decay_widths, bool RWA, bool DECAY, bool TWOPULSE, bool STARK){
   
   double dt = tf - t0;
@@ -32,28 +32,28 @@ polarization, vector<double> Et, vector<double> wx, vector<vector<vector<double>
   vec1x  ytemp (neqn, complexd (0,0) );
   
   // step k1
-  REQ(t0,neqn,nval,y,k1,Matrix, polarization, Et, wx, decay_widths, RWA, DECAY, TWOPULSE, STARK);
+  REQ(t0,neqn,y,k1,Matrix, polarization, Et, wx, decay_widths, RWA, DECAY, TWOPULSE, STARK);
   
   for (int i = 0; i< neqn; i++){
     ytemp[i] = y[i] + dt2*k1[i];
   }
   
   // step k2
-  REQ(tc,neqn,nval,ytemp,k2,Matrix, polarization, Et, wx, decay_widths, RWA, DECAY, TWOPULSE, STARK);
+  REQ(tc,neqn,ytemp,k2,Matrix, polarization, Et, wx, decay_widths, RWA, DECAY, TWOPULSE, STARK);
   
   for (int i = 0; i< neqn; i++){
     ytemp[i] = y[i] + dt2*k2[i];
   }
   
   // step k3
-  REQ(tc,neqn,nval,ytemp,k3,Matrix, polarization, Et, wx, decay_widths, RWA, DECAY, TWOPULSE, STARK);
+  REQ(tc,neqn,ytemp,k3,Matrix, polarization, Et, wx, decay_widths, RWA, DECAY, TWOPULSE, STARK);
   
   for (int i = 0; i< neqn; i++){
     ytemp[i] = y[i] + dt*k3[i];
   }
   
   // step k4
-  REQ(tf,neqn,nval,ytemp,k4,Matrix, polarization, Et, wx, decay_widths, RWA, DECAY, TWOPULSE, STARK);
+  REQ(tf,neqn,ytemp,k4,Matrix, polarization, Et, wx, decay_widths, RWA, DECAY, TWOPULSE, STARK);
   
   for (int i = 0; i< neqn; i++){
     y[i] = y[i] + dt6*(k1[i] + 2.0*k2[i]+ 2.0*k3[i]+ k4[i]);
@@ -65,7 +65,7 @@ polarization, vector<double> Et, vector<double> wx, vector<vector<vector<double>
 /*
  solution:
 */
-void REQ(double t, int n, int nval, vec1x y, vec1x & dydt, vector<arma::mat> Matrix, vector<vector<double> >
+void REQ(double t, int n, vec1x y, vec1x & dydt, vector<arma::mat> Matrix, vector<vector<double> >
 polarization, vector<double> Et, vector<double> wx, vector<vector<vector<double> > > decay_widths, bool RWA, bool DECAY, bool TWOPULSE, bool STARK){
   
   	const complex<double> I(0,1);
@@ -76,20 +76,20 @@ polarization, vector<double> Et, vector<double> wx, vector<vector<vector<double>
     if (DECAY) {
         
         if(!TWOPULSE) {
-            auger_gamma = vector<vector<double> > (1, vector<double>(static_cast<int>(decay_widths[0][0].size()), 0.0));
-            photo_sigma = vector<vector<double> > (1, vector<double>(static_cast<int>(decay_widths[0][1].size()), 0.0));
-            photo_gamma = vector<vector<double> > (1, vector<double>(static_cast<int>(decay_widths[0][1].size()), 0.0));
-            for(int i = 0; i < static_cast<int>(decay_widths[0][0].size()); i++) {
+            auger_gamma = vector<vector<double> > (1, vector<double>(n, 0.0));
+            photo_sigma = vector<vector<double> > (1, vector<double>(n, 0.0));
+            photo_gamma = vector<vector<double> > (1, vector<double>(n, 0.0));
+            for(int i = 0; i < n; i++) {
                 auger_gamma[0][i] = decay_widths[0][0][i] / 27.2114;
                 photo_sigma[0][i] = decay_widths[0][1][i] / 28.0175; //convert megabarn to a.u.
                 photo_gamma[0][i] = (photo_sigma[0][i] / wx[0]) * pow(Et[0],2);
             }       
         }      
         if(TWOPULSE) {
-            auger_gamma = vector<vector<double> > (2, vector<double>(static_cast<int>(decay_widths[0][0].size()), 0.0));
-            photo_sigma = vector<vector<double> > (2, vector<double>(static_cast<int>(decay_widths[0][1].size()), 0.0));
-            photo_gamma = vector<vector<double> > (2, vector<double>(static_cast<int>(decay_widths[0][1].size()), 0.0));
-            for(int i = 0; i < static_cast<int>(decay_widths[0][0].size()); i++) {
+            auger_gamma = vector<vector<double> > (2, vector<double>(n, 0.0));
+            photo_sigma = vector<vector<double> > (2, vector<double>(n, 0.0));
+            photo_gamma = vector<vector<double> > (2, vector<double>(n, 0.0));
+            for(int i = 0; i < n; i++) {
 
                 auger_gamma[0][i] = decay_widths[0][0][i] / 27.2114;
                 auger_gamma[1][i] = decay_widths[1][0][i] / 27.2114;
@@ -106,48 +106,27 @@ polarization, vector<double> Et, vector<double> wx, vector<vector<vector<double>
     }
     if (!DECAY) {
         if(!TWOPULSE) {
-            auger_gamma = vector<vector<double> > (1, vector<double>(static_cast<int>(decay_widths[0][0].size()), 0.0));
-            photo_sigma = vector<vector<double> > (1, vector<double>(static_cast<int>(decay_widths[0][1].size()), 0.0));
-            photo_gamma = vector<vector<double> > (1, vector<double>(static_cast<int>(decay_widths[0][1].size()), 0.0));
+            auger_gamma = vector<vector<double> > (1, vector<double>(n, 0.0));
+            photo_sigma = vector<vector<double> > (1, vector<double>(n, 0.0));
+            photo_gamma = vector<vector<double> > (1, vector<double>(n, 0.0));
         }     
         if(TWOPULSE) {
-            auger_gamma = vector<vector<double> > (2, vector<double>(static_cast<int>(decay_widths[0][0].size()), 0.0));
-            photo_sigma = vector<vector<double> > (2, vector<double>(static_cast<int>(decay_widths[0][1].size()), 0.0));
-            photo_gamma = vector<vector<double> > (2, vector<double>(static_cast<int>(decay_widths[0][1].size()), 0.0));
+            auger_gamma = vector<vector<double> > (2, vector<double>(n, 0.0));
+            photo_sigma = vector<vector<double> > (2, vector<double>(n, 0.0));
+            photo_gamma = vector<vector<double> > (2, vector<double>(n, 0.0));
         }     
     }      
     double R = 0.0;
     if(!TWOPULSE) {
 	    //DIAGONAL	
 	    for (int j = 0; j < n; j++) {
-            if (j >= nval ){ //intermediate states
-                if(STARK) {
-                    R = Stark_Shift(j, Et[0], auger_gamma[0][2] + photo_gamma[0][2], auger_gamma[0][1] +
-                    photo_gamma[0][1], n, wx[0], Matrix[0], polarization[0]);
-                    dydt[j] = ( Matrix[0](j,j) - ( I * ( ((auger_gamma[0][2] + photo_gamma[0][2]) /2.0) + (I * R) ) ) ) * y[j];
-                }
-                else {
-                    dydt[j] = ( ( Matrix[0](j,j) ) - (( I * (auger_gamma[0][2] + photo_gamma[0][2]) )/2.0) ) * y[j];
-                }     
+            if(STARK) {
+                R = Stark_Shift(j, Et[0], auger_gamma[0][j] + photo_gamma[0][j], auger_gamma[0], photo_gamma[0], n, wx[0], Matrix[0], polarization[0]);
+                dydt[j] = ( Matrix[0](j,j) - ( I * ( ((auger_gamma[0][j] + photo_gamma[0][j]) /2.0) + (I * R) ) ) ) * y[j];
             }
-            else if (j == 0) { //ground state 
-                if(STARK) {
-                    R = Stark_Shift(j, Et[0], auger_gamma[0][0] + photo_gamma[0][0], photo_gamma[0][1] + auger_gamma[0][1], n, wx[0], Matrix[0], polarization[0]);
-                }
-                else {
-                    dydt[j] = ( ( Matrix[0](j,j) ) - (( I * (auger_gamma[0][0] + photo_gamma[0][0]) )/2.0) ) * y[j];
-                }     
-            }      
             else {
-                if(STARK) { //final states
-                    R = Stark_Shift(j, Et[0], photo_gamma[0][1] + auger_gamma[0][1], auger_gamma[0][2] +
-                    photo_gamma[0][2], n, wx[0], Matrix[0], polarization[0]);
-                    dydt[j] = ( Matrix[0](j,j) - ( I * ( (photo_gamma[0][1]/2.0) + (I * R) ) )  ) * y[j];
-                }
-                else {
-                    dydt[j] = ( ( Matrix[0](j,j) ) - (( I * (photo_gamma[0][1] + auger_gamma[0][1]) )/2.0) ) * y[j];
-                }     
-            }
+                dydt[j] = ( ( Matrix[0](j,j) ) - (( I * (auger_gamma[0][j] + photo_gamma[0][j]) )/2.0) ) * y[j];
+            }     
 	        //OFF DIAGONAL
 		    for (int i = 0;  i < n; i++) {
 	            double dipole_mat_element = ( (Matrix[0](i,j) * polarization[0][0]) + (Matrix[1](i,j) * polarization[0][1]) + (Matrix[2](i,j) * polarization[0][2]) ); 
@@ -173,19 +152,7 @@ polarization, vector<double> Et, vector<double> wx, vector<vector<vector<double>
     if(TWOPULSE) {
 	    //DIAGONAL	
         for (int j = 0; j < n; j++) {
-		    if (j >= nval ){ //only auger decay on the core excited states
-                dydt[j] = ( ( Matrix[0](j,j) ) - ((I * (((auger_gamma[0][2] + auger_gamma[1][2]) * 0.5)+
-                photo_gamma[0][2] + photo_gamma[1][2]) )/2.0) ) * y[j];
-            }   
-            else if (j == 0) {
-                dydt[j] = ( ( Matrix[0](j,j) ) - ((I * (((auger_gamma[0][0] + auger_gamma[1][0]) * 0.5)+
-                photo_gamma[0][0] + photo_gamma[1][0]) )/2.0) ) * y[j];
-                
-            }          
-            else {
-                dydt[j] = ( ( Matrix[0](j,j) ) - ((I * (((auger_gamma[0][1] + auger_gamma[1][1]) * 0.5)+
-                photo_gamma[0][1] + photo_gamma[1][1]) )/2.0) ) * y[j];
-            }
+                dydt[j] = (Matrix[0](j,j) - ((I * (((auger_gamma[0][j] + auger_gamma[1][j]) * 0.5) + photo_gamma[0][j] + photo_gamma[1][j]) )/2.0) ) * y[j];
 	        //OFF DIAGONAL
             for (int i = 0;  i < n; i++) {
 	            vector<double> dipole_mat_element(2); 
@@ -215,7 +182,7 @@ polarization, vector<double> Et, vector<double> wx, vector<vector<vector<double>
 
 }
 
-double Stark_Shift(int state, double Et, double gamma_state, double gamma_i, int n, double wx, arma::mat Matrix, vector<double> polarization) {
+double Stark_Shift(int state, double Et, double gamma_state, vector<double> auger_i, vector<double> photo_i, int n, double wx, arma::mat Matrix, vector<double> polarization) {
 
     double R = 0.0;
     for (int i = 0;  i < n; i++) {
@@ -223,7 +190,7 @@ double Stark_Shift(int state, double Et, double gamma_state, double gamma_i, int
         double dipole_mat_element = ( (Matrix(i,state) * polarization[0]) + (Matrix(i,state) * polarization[1]) + (Matrix(i,state) * polarization[2]) );
         double w_statei = Matrix(i,i) - Matrix(state,state); 
 
-        R = R + (( pow(dipole_mat_element, 2) * w_statei ) / ( pow(w_statei-wx, 2) + pow(gamma_i / 2, 2) ) ); 
+        R = R + (( pow(dipole_mat_element, 2) * w_statei ) / ( pow(w_statei-wx, 2) + pow((auger_i[i] + photo_i[i])/ 2, 2) ) );    
         
     }
 

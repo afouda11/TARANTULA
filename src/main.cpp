@@ -95,15 +95,12 @@ int main()
     std::vector<int> n_states;       //read total number and number of valence states from file
     file2vector("inputs/n_states.txt", n_states);
     int neqn       = n_states[0];
-    int nval       = n_states[1];
-    int n_sum_type = n_states[2];
-    int n_type     = n_states[3];
-    cout << "The molecular system involves " << neqn << " states" << endl;
-    cout << neqn - nval << " core hole intermediates and " << nval << " final (valence/rydberg) excited states.\n" << endl;  
+    int n_sum_type = n_states[1];
+    int n_type     = n_states[2];
+    cout << "The system involves " << neqn << " electronic states" << endl;
 
     if (TWOSTATE) {
         neqn = 2;
-        nval = 0;
         n_type = 2;
     }     
 
@@ -183,15 +180,15 @@ int main()
     std::vector<vector<vector<double> > > decay_widths; 
     if(!TWOPULSE) {
         decay_widths = vector<vector<vector<double> > > (1, vector<vector<double> >(2));
-        file2vector("inputs/decay_widths_auger_1.txt", decay_widths[0][0]);
-        file2vector("inputs/decay_widths_photo_1.txt", decay_widths[0][1]);
+        file2vector("inputs/auger_rates_1.txt", decay_widths[0][0]);
+        file2vector("inputs/photoion_sigma_1.txt", decay_widths[0][1]);
     }
     if(TWOPULSE) {
         decay_widths = vector<vector<vector<double> > > (2, vector<vector<double> >(2));
-        file2vector("inputs/decay_widths_auger_1.txt", decay_widths[0][0]);
-        file2vector("inputs/decay_widths_auger_2.txt", decay_widths[1][0]);
-        file2vector("inputs/decay_widths_photo_1.txt", decay_widths[0][1]);
-        file2vector("inputs/decay_widths_photo_2.txt", decay_widths[1][1]);
+        file2vector("inputs/auger_rates_1.txt", decay_widths[0][0]);
+        file2vector("inputs/auger_rates_2.txt", decay_widths[1][0]);
+        file2vector("inputs/photoion_sigma_1.txt", decay_widths[0][1]);
+        file2vector("inputs/photoion_sigma_2.txt", decay_widths[1][1]);
     }
     cout << "Decay widths read\n" << endl;
 
@@ -279,7 +276,7 @@ int main()
 
         //DO THE TDSE
         startTime = clock();    
-        rk4_run(ei, shell_sample, band_sample, neqn, nval, nt, tstart, dt, tmax, field_strength, gw, wn, var, wx, Matrix,
+        rk4_run(ei, shell_sample, band_sample, neqn, nt, tstart, dt, tmax, field_strength, gw, wn, var, wx, Matrix,
         polarization, decay_widths, RWA, ECALC, DECAY, TWOPULSE, GAUSS, BANDW_AVG, STARK, WRITE_PULSE, tf_vec, pt_vec_avg[ei], norm_t_vec_avg[ei]);
 
         if(PERP_AVG) {
@@ -287,7 +284,7 @@ int main()
             if(TWOPULSE) {//not properly implemented for two pulse, assumes both pusles perpendicular to z
                 polarization[1][0] = 0.0; polarization[1][1] = 1.0; polarization[1][2] = 0.0;
             }
-            rk4_run(ei, shell_sample, band_sample, neqn, nval, nt, tstart, dt, tmax, field_strength, gw, wn, var, wx, Matrix,
+            rk4_run(ei, shell_sample, band_sample, neqn, nt, tstart, dt, tmax, field_strength, gw, wn, var, wx, Matrix,
             polarization, decay_widths, RWA, ECALC, DECAY, TWOPULSE, GAUSS, BANDW_AVG, STARK, WRITE_PULSE, tf_vec, pt_vec_avg_perp[ei], norm_t_vec_avg_perp[ei]);    
             //return to x
             polarization[0][0] = 1.0; polarization[0][1] = 0.0; polarization[0][2] = 0.0;

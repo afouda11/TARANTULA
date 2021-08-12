@@ -7,7 +7,7 @@ void focal_volume_average(double spot_size, vector<vector<double> >& field_stren
 
 void bandwidth_average(double bw, std::vector<vector<double> >& gw, std::vector<vector<double> >& wn, std::vector<double> wx, int band_sample);
 
-void rk4_run(int ei, int shell_sample, int band_sample, int neqn, int nval, int nt, double tstart, double dt,
+void rk4_run(int ei, int shell_sample, int band_sample, int neqn, int nt, double tstart, double dt,
 vector<double> tmax, vector<vector<vector<double> > > field_strength, vector<vector<double> > gw, vector<vector<double>
 > wn, vector<double> var, vector<vector<double> > wx, vector<arma::mat> Matrix, vector<vector<double> > polarization,
 vector<vector<vector<double> > > decay_widths, bool RWA, bool ECALC, bool DECAY, bool TWOPULSE, bool GAUSS, bool
