@@ -95,17 +95,18 @@ void group_sum(int n_sum_type, int nt, int neqn, int n_decay_chan, vector<vec1x 
     }
     int n_state = neqn / (n_decay_chan+1);
     for (int i = 0; i<nt; i++) {
-        for (int n = 0; n < n_decay_chan; n++) {
-            for (int j = 0; j<neqn; j++) {
-
-                pt_sum_vec[0 + (n*n_state)][i] = pt_vec[0 + (n*n_state)][i];
+        for (int n = 0; n < n_decay_chan+1; n++) {
+            pt_sum_vec[0 + (n*(n_sum_type /(n_decay_chan+1)))][i] = pt_vec[0 + (n*n_state)][i];
+            for (int j = 1; j<n_state; j++) {
                 for (int k = 0; k < (n_sum_type-(n_decay_chan+1))/(n_decay_chan+1); k++) {//v fiddly (want k to index over group_names)
-
+                                                                                          //the fact that the ground
+                                                                                          //isnt included in group_names
+                                                                                          //makes it more weird
                     for (int l = 0; l < static_cast<int>(groups[k].size()); l++) {
                             
-                        if (j - (n*n_state) == groups[k][l]) {
+                        if (j == groups[k][l]) {
 
-                            pt_sum_vec[(k+1) + (n_sum_type / (n_decay_chan+1))][i] += pt_vec[j][i];
+                            pt_sum_vec[(k+1) + (n*(n_sum_type/(n_decay_chan+1)))][i] += pt_vec[j + (n*n_state)][i];
 
                         }
 
@@ -117,7 +118,7 @@ void group_sum(int n_sum_type, int nt, int neqn, int n_decay_chan, vector<vec1x 
     return;
 }               
 
-void pair_sum(int nt, int n_type, vector<vec1x >& pt_vec_, vector<vec1x > pt_vec_avg_)
+void pair_sum(int nt, int n_type, int n_decay_chan, vector<vec1x >& pt_vec_, vector<vec1x > pt_vec_avg_)
 {
  	int	col1, col2;
 	std::vector<int>	one;
@@ -129,16 +130,20 @@ void pair_sum(int nt, int n_type, vector<vec1x >& pt_vec_, vector<vec1x > pt_vec
 		in >> col2;
   		two.push_back(col2);
 	}
+    int n_actual_type = n_type / (n_decay_chan+1);
+    int neqn = static_cast<int>(pt_vec_avg_.size());
+    int n_state = neqn / (n_decay_chan+1);
 
     for(int i = 0; i<nt; i++) {
-        for(int j = 0; j < n_type; j++) {  
-            pt_vec_[j][i] = pt_vec_avg_[one[j]][i];
-            if (two[j] > 0) {
-                pt_vec_[j][i] += pt_vec_avg_[two[j]][i];
+        for(int n = 0; n < n_decay_chan+1; n++) {
+            for(int j = 0; j < n_actual_type; j++) {  
+                pt_vec_[j + (n*n_actual_type)][i] = pt_vec_avg_[one[j] + (n*n_state)][i];
+                if (two[j] > 0) {
+                    pt_vec_[j + (n*n_actual_type)][i] += pt_vec_avg_[two[j] + (n*n_state)][i];
 
+                }      
             }      
-        }      
-
+        }
     }
     return;
 }

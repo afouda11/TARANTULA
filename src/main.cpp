@@ -283,7 +283,7 @@ int main()
     vector<vector<vec1x > > pt_vec_avg_perp(n_calc, vector<vec1x > (neqn, vec1x (nt, complexd(0.0,0.0))));
     vector<vector<vec1x > > pt_vec_perp(n_calc, vector<vec1x > (n_type, vec1x (nt, complexd(0.0,0.0))));
     vector<vector<double> > norm_t_vec_avg_perp(n_calc, vector<double> (nt, 0.0));
-    //if SUM = true
+    //for group_sum, if SUM=true
     vector<vector<vec1x > > pt_sum_vec(n_calc, vector<vec1x > (n_sum_type, vec1x (nt, complexd(0.0,0.0))));
     vector<vector<vec1x > > pt_sum_vec_perp(n_calc, vector<vec1x > (n_sum_type, vec1x (nt, complexd(0.0,0.0))));
 
@@ -325,7 +325,7 @@ int main()
         //sum degenerate pairs of pi states, need to list the pairs in inputs/state_pairs.txt
         if (!TWOSTATE) {
             if (PAIR_SUM) {
-                pair_sum(nt, n_type, pt_vec[ei], pt_vec_avg[ei]);
+                pair_sum(nt, n_type, n_decay_chan, pt_vec[ei], pt_vec_avg[ei]);
             }
             else {
                 pt_vec = pt_vec_avg;
@@ -336,7 +336,7 @@ int main()
         }
         if(PERP_AVG) { //twostate and perp_avg are not compatible together
             if (PAIR_SUM) {
-                pair_sum(nt, n_type, pt_vec_perp[ei], pt_vec_avg_perp[ei]);
+                pair_sum(nt, n_type, n_decay_chan, pt_vec_perp[ei], pt_vec_avg_perp[ei]);
             }      
             else {
                 pt_vec_perp = pt_vec_avg_perp;
