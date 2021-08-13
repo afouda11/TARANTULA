@@ -83,36 +83,37 @@ arma::mat read_matrix(int n, std::string Diagonal, std::string Off_Diagonal) {
 }
 
 //sums groups of states indcated by index files
-void group_sum(int n_sum_type, int nt, int neqn, vector<vec1x >& pt_sum_vec, vector<vec1x > pt_vec) {
+void group_sum(int n_sum_type, int nt, int neqn, int n_decay_chan, vector<vec1x >& pt_sum_vec, vector<vec1x > pt_vec) {
 
     std::vector<string> group_names;
     file2vector("inputs/group_names.txt", group_names);
     std::vector<vector<int> > groups;
-    groups = vector<vector<int> >(n_sum_type-1);
+    groups = vector<vector<int> >((n_sum_type-(n_decay_chan+1))/(n_decay_chan+1));
 
-    for (int i = 0; i < n_sum_type-1; i++) {
+    for (int i = 0; i < (n_sum_type-(n_decay_chan+1))/(n_decay_chan+1); i++) {
         file2vector("inputs/"+group_names[i]+"_index.txt",  groups[i]); 
     }
+    int n_state = neqn / (n_decay_chan+1);
+    for (int i = 0; i<nt; i++) {
+        for (int n = 0; n < n_decay_chan; n++) {
+            for (int j = 0; j<neqn; j++) {
 
-    for(int i = 0; i<nt; i++) {
-        for (int j = 0; j<neqn; j++) {
+                pt_sum_vec[0 + (n*n_state)][i] = pt_vec[0 + (n*n_state)][i];
+                for (int k = 0; k < (n_sum_type-(n_decay_chan+1))/(n_decay_chan+1); k++) {//v fiddly (want k to index over group_names)
 
-            pt_sum_vec[0][i] = pt_vec[0][i];
-            for (int k = 0; k < n_sum_type-1; k++) {   
+                    for (int l = 0; l < static_cast<int>(groups[k].size()); l++) {
+                            
+                        if (j - (n*n_state) == groups[k][l]) {
 
-                for (int l = 0; l < static_cast<int>(groups[k].size()); l++) {
-                        
-                    if (j == groups[k][l]) {
+                            pt_sum_vec[(k+1) + (n_sum_type / (n_decay_chan+1))][i] += pt_vec[j][i];
 
-                        pt_sum_vec[k+1][i] += pt_vec[j][i];
+                        }
 
                     }
-
                 }
             }
-        }
+        }         
     }      
-
     return;
 }               
 

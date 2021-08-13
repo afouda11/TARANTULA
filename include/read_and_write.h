@@ -19,7 +19,7 @@ bool read_bool_options(string option);
 
 arma::mat read_matrix(int n, std::string Diagonal, std::string Off_Diagonal);
 
-void group_sum(int n_type, int nt, int neqn, vector<vec1x > & pt_sum_vec, vector<vec1x > pt_vec);
+void group_sum(int n_type, int nt, int neqn, int n_decay_chan, vector<vec1x > & pt_sum_vec, vector<vec1x > pt_vec);
 
 void pair_sum(int nt, int n_type, vector<vec1x >& pt_vec_, vector<vec1x > pt_vec_avg_);
 

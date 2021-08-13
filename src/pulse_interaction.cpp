@@ -73,15 +73,15 @@ void bandwidth_average(double bw, std::vector<vector<double> >& gw, std::vector<
 void rk4_run(int ei, int shell_sample, int band_sample, int neqn, int nt, double tstart, double dt,
 vector<double> tmax, vector<vector<vector<double> > > field_strength, vector<vector<double> > gw, vector<vector<double>>
 wn, vector<double> var, vector<vector<double> > wx, vector<arma::mat> Matrix, vector<vector<double> > polarization,
-vector<vector<vector<double> > > decay_widths, bool RWA, bool ECALC, bool DECAY, bool TWOPULSE, bool GAUSS, bool
-BANDW_AVG, bool STARK, bool WRITE_PULSE, vector<double>& tf_vec, vector<vec1x >& pt_vec_avg, vector<double>& norm_t_vec_avg)
+vector<vector<vector<double> > > decay_widths, vector<string> decay_channels, bool RWA, bool ECALC, bool DECAY, bool TWOPULSE, bool GAUSS, bool
+BANDW_AVG, bool STARK, bool WRITE_PULSE, bool DECAY_AMP, vector<double>& tf_vec, vector<vec1x >& pt_vec_avg, vector<double>& norm_t_vec_avg)
 {
 
     vector<double>          gw_;
     vector<double>          wn_;
     vector<vector<double> > field_strength_;
     vector<double>          wx_;
-
+    
     if(!TWOPULSE) {
         field_strength_ = vector<vector<double> >(1);
         wx_             = vector<double>(1);
@@ -159,7 +159,7 @@ BANDW_AVG, bool STARK, bool WRITE_PULSE, vector<double>& tf_vec, vector<vec1x >&
                     wx_[0] = wn_[b];
                 }
 
-			    rk4(neqn, y, t0, tf, Matrix, polarization, Et, wx_, decay_widths, RWA, DECAY, TWOPULSE, STARK);
+			    rk4(neqn, y, t0, tf, Matrix, polarization, Et, wx_, decay_widths, decay_channels, RWA, DECAY, TWOPULSE, STARK, DECAY_AMP);
                
                 if(ei == 0 and a == 0 and b == 0) {
                     for(int n = 0; n < static_cast<int>(field.size()); n++) {

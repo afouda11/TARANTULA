@@ -37,6 +37,7 @@ int main()
     bool STARK       = read_bool_options("STARK");
     bool WRITE_PULSE = read_bool_options("WRITE_PULSE");
     bool PAIR_SUM    = read_bool_options("PAIR_SUM");
+    bool DECAY_AMP   = read_bool_options("DECAY_AMP");
 
     if (TWOSTATE) {                   
         SUM       = false;
@@ -45,6 +46,7 @@ int main()
         BANDW_AVG = false;
         PERP_AVG  = false;
         TWOPULSE  = false;
+        PAIR_SUM  = false;
     }
 
     vector<double> fwhm;
@@ -190,7 +192,23 @@ int main()
         file2vector("inputs/photoion_sigma_1.txt", decay_widths[0][1]);
         file2vector("inputs/photoion_sigma_2.txt", decay_widths[1][1]);
     }
+
     cout << "Decay widths read\n" << endl;
+    vector<string> decay_channels;
+    int n_decay_chan = 0;
+    if(DECAY_AMP) {
+        file2vector("inputs/decay_channels.txt", decay_channels);
+        n_decay_chan = static_cast<int>(decay_channels.size());
+        cout << "Amplitudes for the following decay channles will be calculated\n" << endl;
+        for(int i = 0; i < n_decay_chan; i++) {
+            cout << decay_channels[i] << endl;
+        } 
+         cout << "\n";
+
+        neqn       += neqn       * n_decay_chan;
+        n_type     += n_type     * n_decay_chan;
+        n_sum_type += n_sum_type * n_decay_chan;
+    }
 
     vector<vector<double> > polarization;
     if(!TWOPULSE) {
@@ -257,16 +275,14 @@ int main()
 
     //TDSE vector containers
     vector<double> tf_vec(nt, 0.0);
-
-    vector<vector<vec1x > > pt_vec_avg(n_calc, vector<vec1x > (neqn, vec1x (nt, complexd(0.0,0.0))));
-    vector<vector<double> > norm_t_vec_avg(n_calc, vector<double> (nt, 0.0));
     //involves the summed degenerate paris of final states
     vector<vector<vec1x > > pt_vec(n_calc, vector<vec1x > (n_type, vec1x (nt, complexd(0.0,0.0))));
-
+    vector<vector<vec1x > > pt_vec_avg(n_calc, vector<vec1x > (neqn, vec1x (nt, complexd(0.0,0.0))));
+    vector<vector<double> > norm_t_vec_avg(n_calc, vector<double> (nt, 0.0));
     //used only for averging over x and y initated by PEP_AVG
     vector<vector<vec1x > > pt_vec_avg_perp(n_calc, vector<vec1x > (neqn, vec1x (nt, complexd(0.0,0.0))));
-    vector<vector<double> > norm_t_vec_avg_perp(n_calc, vector<double> (nt, 0.0));
     vector<vector<vec1x > > pt_vec_perp(n_calc, vector<vec1x > (n_type, vec1x (nt, complexd(0.0,0.0))));
+    vector<vector<double> > norm_t_vec_avg_perp(n_calc, vector<double> (nt, 0.0));
     //if SUM = true
     vector<vector<vec1x > > pt_sum_vec(n_calc, vector<vec1x > (n_sum_type, vec1x (nt, complexd(0.0,0.0))));
     vector<vector<vec1x > > pt_sum_vec_perp(n_calc, vector<vec1x > (n_sum_type, vec1x (nt, complexd(0.0,0.0))));
@@ -277,7 +293,8 @@ int main()
         //DO THE TDSE
         startTime = clock();    
         rk4_run(ei, shell_sample, band_sample, neqn, nt, tstart, dt, tmax, field_strength, gw, wn, var, wx, Matrix,
-        polarization, decay_widths, RWA, ECALC, DECAY, TWOPULSE, GAUSS, BANDW_AVG, STARK, WRITE_PULSE, tf_vec, pt_vec_avg[ei], norm_t_vec_avg[ei]);
+        polarization, decay_widths, decay_channels, RWA, ECALC, DECAY, TWOPULSE, GAUSS, BANDW_AVG, STARK, WRITE_PULSE,
+        DECAY_AMP, tf_vec, pt_vec_avg[ei], norm_t_vec_avg[ei]);
 
         if(PERP_AVG) {
             polarization[0][0] = 0.0; polarization[0][1] = 1.0; polarization[0][2] = 0.0;
@@ -285,7 +302,8 @@ int main()
                 polarization[1][0] = 0.0; polarization[1][1] = 1.0; polarization[1][2] = 0.0;
             }
             rk4_run(ei, shell_sample, band_sample, neqn, nt, tstart, dt, tmax, field_strength, gw, wn, var, wx, Matrix,
-            polarization, decay_widths, RWA, ECALC, DECAY, TWOPULSE, GAUSS, BANDW_AVG, STARK, WRITE_PULSE, tf_vec, pt_vec_avg_perp[ei], norm_t_vec_avg_perp[ei]);    
+            polarization, decay_widths, decay_channels, RWA, ECALC, DECAY, TWOPULSE, GAUSS, BANDW_AVG, STARK,
+            WRITE_PULSE, DECAY_AMP, tf_vec, pt_vec_avg_perp[ei], norm_t_vec_avg_perp[ei]);    
             //return to x
             polarization[0][0] = 1.0; polarization[0][1] = 0.0; polarization[0][2] = 0.0;
             if(TWOPULSE) {//not properly implemented for two pulse, assumes both pusles perpendicular to z
@@ -295,13 +313,11 @@ int main()
 
         cout << "RK4 Time:\n" << double( clock() - startTime ) / (double)CLOCKS_PER_SEC<< " seconds.\n" << endl;
 
-        //SUM groups of states listed input/group_names.txt an dcorrepseonding _inde.txt files to create a neater represenation
+        //SUM groups of states listed input/group_names.txt and correpseonding _index.txt files to neaten represenation
         if (SUM) {
-            //containers
-
-            group_sum(n_sum_type, nt, neqn, pt_sum_vec[ei], pt_vec_avg[ei]);
+            group_sum(n_sum_type, nt, neqn, n_decay_chan, pt_sum_vec[ei], pt_vec_avg[ei]);
             if(PERP_AVG) {
-                group_sum(n_sum_type, nt, neqn, pt_sum_vec_perp[ei], pt_vec_avg_perp[ei]);
+                group_sum(n_sum_type, nt, neqn, n_decay_chan, pt_sum_vec_perp[ei], pt_vec_avg_perp[ei]);
             }
             cout << "Sum complete" << endl;
         }

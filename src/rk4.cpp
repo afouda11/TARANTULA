@@ -17,7 +17,8 @@
 #endif
 
 void rk4(int neqn, vec1x & y, double t0, double tf, vector<arma::mat> Matrix, vector<vector<double> >
-polarization, vector<double> Et, vector<double> wx, vector<vector<vector<double> > > decay_widths, bool RWA, bool DECAY, bool TWOPULSE, bool STARK){
+polarization, vector<double> Et, vector<double> wx, vector<vector<vector<double> > > decay_widths, vector<string>
+decay_channels, bool RWA, bool DECAY, bool TWOPULSE, bool STARK, bool DECAY_AMP){
   
   double dt = tf - t0;
   double tc = t0 + 0.5* dt;
@@ -32,28 +33,28 @@ polarization, vector<double> Et, vector<double> wx, vector<vector<vector<double>
   vec1x  ytemp (neqn, complexd (0,0) );
   
   // step k1
-  REQ(t0,neqn,y,k1,Matrix, polarization, Et, wx, decay_widths, RWA, DECAY, TWOPULSE, STARK);
+  REQ(t0, neqn, y, k1, Matrix, polarization, Et, wx, decay_widths, decay_channels, RWA, DECAY, TWOPULSE, STARK, DECAY_AMP);
   
   for (int i = 0; i< neqn; i++){
     ytemp[i] = y[i] + dt2*k1[i];
   }
   
   // step k2
-  REQ(tc,neqn,ytemp,k2,Matrix, polarization, Et, wx, decay_widths, RWA, DECAY, TWOPULSE, STARK);
+  REQ(tc, neqn, ytemp, k2, Matrix, polarization, Et, wx, decay_widths, decay_channels, RWA, DECAY, TWOPULSE, STARK, DECAY_AMP);
   
   for (int i = 0; i< neqn; i++){
     ytemp[i] = y[i] + dt2*k2[i];
   }
   
   // step k3
-  REQ(tc,neqn,ytemp,k3,Matrix, polarization, Et, wx, decay_widths, RWA, DECAY, TWOPULSE, STARK);
+  REQ(tc, neqn, ytemp, k3, Matrix, polarization, Et, wx, decay_widths, decay_channels, RWA, DECAY, TWOPULSE, STARK, DECAY_AMP);
   
   for (int i = 0; i< neqn; i++){
     ytemp[i] = y[i] + dt*k3[i];
   }
   
   // step k4
-  REQ(tf,neqn,ytemp,k4,Matrix, polarization, Et, wx, decay_widths, RWA, DECAY, TWOPULSE, STARK);
+  REQ(tf, neqn, ytemp, k4, Matrix, polarization, Et, wx, decay_widths, decay_channels, RWA, DECAY, TWOPULSE, STARK, DECAY_AMP);
   
   for (int i = 0; i< neqn; i++){
     y[i] = y[i] + dt6*(k1[i] + 2.0*k2[i]+ 2.0*k3[i]+ k4[i]);
@@ -65,16 +66,20 @@ polarization, vector<double> Et, vector<double> wx, vector<vector<vector<double>
 /*
  solution:
 */
-void REQ(double t, int n, vec1x y, vec1x & dydt, vector<arma::mat> Matrix, vector<vector<double> >
-polarization, vector<double> Et, vector<double> wx, vector<vector<vector<double> > > decay_widths, bool RWA, bool DECAY, bool TWOPULSE, bool STARK){
+void REQ(double t, int neqn, vec1x y, vec1x & dydt, vector<arma::mat> Matrix, vector<vector<double> >
+polarization, vector<double> Et, vector<double> wx, vector<vector<vector<double> > > decay_widths, vector<string>
+decay_channels, bool RWA, bool DECAY, bool TWOPULSE, bool STARK, bool DECAY_AMP){
   
+    int n_decay_chan = static_cast<int>(decay_channels.size());
+
+    int n = neqn / (n_decay_chan+1);
+
   	const complex<double> I(0,1);
     vector<vector<double> > auger_gamma;
     vector<vector<double> > photo_gamma;
     vector<vector<double> > photo_sigma;
 
-    if (DECAY) {
-        
+    if (DECAY) { 
         if(!TWOPULSE) {
             auger_gamma = vector<vector<double> > (1, vector<double>(n, 0.0));
             photo_sigma = vector<vector<double> > (1, vector<double>(n, 0.0));
@@ -99,10 +104,8 @@ polarization, vector<double> Et, vector<double> wx, vector<vector<vector<double>
 
                 photo_gamma[0][i] = (photo_sigma[0][i] / wx[0]) * pow(Et[0],2);
                 photo_gamma[1][i] = (photo_sigma[1][i] / wx[1]) * pow(Et[1],2);
-
             }        
         }      
-        
     }
     if (!DECAY) {
         if(!TWOPULSE) {
@@ -115,7 +118,8 @@ polarization, vector<double> Et, vector<double> wx, vector<vector<vector<double>
             photo_sigma = vector<vector<double> > (2, vector<double>(n, 0.0));
             photo_gamma = vector<vector<double> > (2, vector<double>(n, 0.0));
         }     
-    }      
+    }
+
     double R = 0.0;
     if(!TWOPULSE) {
 	    //DIAGONAL	
@@ -150,7 +154,7 @@ polarization, vector<double> Et, vector<double> wx, vector<vector<vector<double>
 	    }
     }
     if(TWOPULSE) {
-	    //DIAGONAL	
+	    //DIAGONAL need to check how the augers would be treated for two different core hole lifetimes
         for (int j = 0; j < n; j++) {
                 dydt[j] = (Matrix[0](j,j) - ((I * (((auger_gamma[0][j] + auger_gamma[1][j]) * 0.5) + photo_gamma[0][j] + photo_gamma[1][j]) )/2.0) ) * y[j];
 	        //OFF DIAGONAL
@@ -176,9 +180,26 @@ polarization, vector<double> Et, vector<double> wx, vector<vector<vector<double>
 		    }
 	        dydt[j] /= I;		
         }
-    }      
-
-  return;
+    }
+    if(DECAY_AMP && !TWOPULSE) {
+        for(int i = 0; i < n_decay_chan; i++) {
+            
+            for (int j = (n * (i+1)); j < n * (i+2); j++) {
+                if (decay_channels[i] == "PHOTO_TOTAL" ) {
+                    dydt[j] = y[j] + y[j-(n*(i+1))] * pow(photo_gamma[0][j-(n*(i+1))] / 2* M_PI, 0.5);
+                }
+                if (decay_channels[i] == "AUGER" ) {
+                    dydt[j] = y[j] + y[j-(n*(i+1))] * pow(auger_gamma[0][j-(n*(i+1))] / 2* M_PI, 0.5);
+                }
+                if (decay_channels[i] == "AUGER+PHOTO_TOTAL" ) {
+                    dydt[j] = y[j] + y[j-(n*(i+1))] * pow((auger_gamma[0][j-(n*(i+1))] + photo_gamma[0][j-(n*(i+1))]) / 2* M_PI, 0.5);
+                }
+                dydt[j] /= I;
+            }
+        }       
+        
+    }
+    return;
 
 }
 
