@@ -46,7 +46,7 @@ bool read_bool_options(string option) {
 
 arma::mat read_matrix(int n, std::string Diagonal, std::string Off_Diagonal) {
 
-    std::ifstream file(Diagonal);	
+    std::ifstream file(Diagonal.c_str());	
 	std::istream_iterator<double> start(file), end;
 	std::vector<double> diagonal(start, end);	
 	
@@ -60,7 +60,7 @@ arma::mat read_matrix(int n, std::string Diagonal, std::string Off_Diagonal) {
 	std::vector<int>	ivec;
 	std::vector<int>	jvec;	
 	std::vector<double>	val;
-	std::ifstream in(Off_Diagonal);
+	std::ifstream in(Off_Diagonal.c_str());
 	while(!in.eof()){
 		in >> col1;
   		ivec.push_back(col1);

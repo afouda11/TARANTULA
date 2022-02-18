@@ -185,14 +185,31 @@ decay_channels, bool RWA, bool DECAY, bool TWOPULSE, bool STARK, bool DECAY_AMP)
         for(int i = 0; i < n_decay_chan; i++) {
             
             for (int j = (n * (i+1)); j < n * (i+2); j++) {
+				//cout << j-(n*(i+1)) << endl;
                 if (decay_channels[i] == "PHOTO_TOTAL" ) {
-                    dydt[j] = (y[j] * Matrix[0](j-(n*(i+1)),j-(n*(i+1)))) + (y[j-(n*(i+1))] * photo_gamma[0][j-(n*(i+1))]);
+                    //dydt[j] = (y[j] * Matrix[0](j-(n*(i+1)),j-(n*(i+1)))) + (y[j-(n*(i+1))] * photo_gamma[0][j-(n*(i+1))]);
+                    //dydt[j] += ( y[j-(n*(i+1))] + ( y[j-(n*(i+1))] * (-1.0 * I * photo_gamma[0][j-(n*(i+1))] * 0.5) ) );
+                    //dydt[j] += ( y[j] + ( y[j-(n*(i+1))] * (-1.0 * I * photo_gamma[0][j-(n*(i+1))] * 0.5) ) );
+                    //dydt[j] = dydt[j-(n*(i+1))];
+                    //dydt[j] = dydt[0];
+                    dydt[j] = ( y[j-(n*(i+1))] * (-1.0 * I * photo_gamma[0][j-(n*(i+1))] * 0.5) ) ;
+					//dydt[j] = I * photo_gamma[0][j-(n*(i+1))] * 0.5;
                 }
                 if (decay_channels[i] == "AUGER" ) {
-                    dydt[j] = (y[j] * Matrix[0](j-(n*(i+1)),j-(n*(i+1)))) + (y[j-(n*(i+1))] * pow(auger_gamma[0][j-(n*(i+1))] / 2* M_PI, 0.5));
+                    //dydt[j] = (y[j] * Matrix[0](j-(n*(i+1)),j-(n*(i+1)))) + (y[j-(n*(i+1))] * pow(auger_gamma[0][j-(n*(i+1))] / 2* M_PI, 0.5));
+                    //dydt[j] += ( y[j-(n*(i+1))] + ( y[j-(n*(i+1))] * (-1.0 * I * auger_gamma[0][j-(n*(i+1))] * 0.5) ) );
+                    //dydt[j] += ( y[j] + ( y[j-(n*(i+1))] * (-1.0 * I * auger_gamma[0][j-(n*(i+1))] * 0.5) ) );
+                    //dydt[j] = dydt[j-(n*(i+1))];
+					//dydt[j] = I * auger_gamma[0][j-(n*(i+1))] * 0.5;
+                    dydt[j] = ( y[j-(n*(i+1))] * (-1.0 * I * auger_gamma[0][j-(n*(i+1))] * 0.5) );
                 }
                 if (decay_channels[i] == "AUGER+PHOTO_TOTAL" ) {
-                    dydt[j] = (y[j] * Matrix[0](j-(n*(i+1)),j-(n*(i+1)))) + (y[j-(n*(i+1))] * pow((auger_gamma[0][j-(n*(i+1))] + photo_gamma[0][j-(n*(i+1))])/2* M_PI, 0.5));
+                    //dydt[j] = (y[j] * Matrix[0](j-(n*(i+1)),j-(n*(i+1)))) + (y[j-(n*(i+1))] * pow((auger_gamma[0][j-(n*(i+1))] + photo_gamma[0][j-(n*(i+1))])/2* M_PI, 0.5));
+                    //dydt[j] += ( y[j-(n*(i+1))] + ( y[j-(n*(i+1))] * (-1.0 * I * (auger_gamma[0][j-(n*(i+1))] + photo_gamma[0][j-(n*(i+1))]) * 0.5) ) );
+                    //dydt[j] += ( y[j] + ( y[j-(n*(i+1))] * (-1.0 * I * (auger_gamma[0][j-(n*(i+1))] + photo_gamma[0][j-(n*(i+1))]) * 0.5) ) );
+                    //dydt[j] = dydt[j-(n*(i+1))];
+					//dydt[j] = I * (auger_gamma[0][j-(n*(i+1))] + photo_gamma[0][j-(n*(i+1))])* 0.5;
+                    dydt[j] = ( y[j-(n*(i+1))] * (-1.0 * I * (auger_gamma[0][j-(n*(i+1))] + photo_gamma[0][j-(n*(i+1))]) * 0.5) );
                 }
                 dydt[j] /= I;
             }

@@ -29,6 +29,52 @@ double gaussian_field(double t, double t_max, double amp_max, double var)
 	return Et;
 }
 
+double icalib(vector<arma::mat> Matrix, vector<vector<double> > polarization, std::vector<vector<double> > wx, double spot_size, vector<double> var) 
+{
+
+	int col1, col2;
+	std::vector<int>    one;
+	std::vector<int>    two;
+	std::ifstream in("inputs/icalib_states.txt");
+	while(!in.eof()){
+		in >> col1;
+		one.push_back(col1);
+		in >> col2;
+		two.push_back(col2);
+	}
+	double tdm_1, tdm_2;
+	if(polarization[0][0] == 1.0) {
+		tdm_1 = Matrix[0](one[0], two[0]);
+		tdm_2 = Matrix[0](one[1], two[1]);
+	}
+	if(polarization[0][1] == 1.0) {
+		tdm_1 = Matrix[1](one[0], two[0]);
+		tdm_2 = Matrix[1](one[1], two[1]);
+	}
+	if(polarization[0][2] == 1.0) {
+		tdm_1 = Matrix[2](one[0], two[0]);
+		tdm_2 = Matrix[2](one[1], two[1]);
+	}
+	double omega = wx[0][0];
+	
+	double sigma_1 = ( (4 * M_PI * M_PI ) / (3 * 137 ) ) * omega * abs(pow(tdm_1, 2));
+	double sigma_2 = ( (4 * M_PI * M_PI ) / (3 * 137 ) ) * omega * abs(pow(tdm_2, 2));
+
+	double fluence_both = sqrt(1 /(sigma_1 * sigma_2));
+    spot_size  = (spot_size * 18897.161646321) / (2 * pow(2 * log(2), 0.5));
+    //spot_size  = pow(spot_size,2);
+	double pulse_energy	= fluence_both * spot_size;
+	double peak_power = pulse_energy / var[0];
+	double intensity = peak_power / spot_size;
+
+	cout << "Calibrated pulse intensity (W/cm^2)" << endl;
+	cout << intensity * 3.50944758E+16 << endl;
+
+	return intensity * 3.50944758E+16 ;
+
+}
+
+
 void focal_volume_average(double spot_size, vector<vector<double> >& field_strength, vector<double> intensity, int shell_sample)
 {
     if (shell_sample > 1) { 
@@ -71,7 +117,7 @@ void bandwidth_average(double bw, std::vector<vector<double> >& gw, std::vector<
 }   
 
 void rk4_run(int ei, int shell_sample, int band_sample, int neqn, int nt, double tstart, double dt,
-vector<double> tmax, vector<vector<vector<double> > > field_strength, vector<vector<double> > gw, vector<vector<double>>
+vector<double> tmax, vector<vector<vector<double> > > field_strength, vector<vector<double> > gw, vector<vector<double> >
 wn, vector<double> var, vector<vector<double> > wx, vector<arma::mat> Matrix, vector<vector<double> > polarization,
 vector<vector<vector<double> > > decay_widths, vector<string> decay_channels, bool RWA, bool ECALC, bool DECAY, bool TWOPULSE, bool GAUSS, bool
 BANDW_AVG, bool STARK, bool WRITE_PULSE, bool DECAY_AMP, vector<double>& tf_vec, vector<vec1x >& pt_vec_avg, vector<double>& norm_t_vec_avg)
@@ -128,7 +174,7 @@ BANDW_AVG, bool STARK, bool WRITE_PULSE, bool DECAY_AMP, vector<double>& tf_vec,
             vector<vec1x > pt(neqn, vec1x (nt, complexd(0.0,0.0)));	
 		    vec1x y (neqn, complexd(0.0,0.0));	
     	    y[0] = 1.0; //initial condition - all in the G-state
-
+			//y[9] = 1.0;
 		    for(int i = 0; i<nt; i++) { 
 
 		        double t0 = tstart + i*dt;

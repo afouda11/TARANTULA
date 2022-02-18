@@ -3,6 +3,8 @@
 
 double gaussian_field(double t, double t_max, double amp_max, double var);
 
+double icalib(vector<arma::mat> Matrix, vector<vector<double> > polarization, std::vector<vector<double> > ww, double spot_size, vector<double> var);
+
 void focal_volume_average(double spot_size, vector<vector<double> >& field_strength, vector<double> intensity, int shell_sample);
 
 void bandwidth_average(double bw, std::vector<vector<double> >& gw, std::vector<vector<double> >& wn, std::vector<double> wx, int band_sample);

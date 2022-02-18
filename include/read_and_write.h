@@ -8,7 +8,7 @@
 
 template <typename T>
 void file2vector(std::string filename, std::vector<T>& vec) {
-    std::ifstream file(filename);
+    std::ifstream file(filename.c_str());
     std::istream_iterator<T> start(file);
     std::istream_iterator<T> end;
     copy(start, end, back_inserter(vec));

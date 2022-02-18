@@ -24,6 +24,7 @@ int main()
 {
     cout << "\n\n*!*!*!*!*!*!*!* TDSE(RK4) Solver for XFEL experiments *!*!*!*!*!*!*!*\n\n" << endl;
 
+	//Read in bool options
     bool RWA         = read_bool_options("RWA");      //do rotating wave approx.
     bool GAUSS       = read_bool_options("GAUSS");   
     bool DECAY       = read_bool_options("DECAY");   
@@ -38,6 +39,7 @@ int main()
     bool WRITE_PULSE = read_bool_options("WRITE_PULSE");
     bool PAIR_SUM    = read_bool_options("PAIR_SUM");
     bool DECAY_AMP   = read_bool_options("DECAY_AMP");
+	bool ICALIB      = read_bool_options("ICALIB");
 
     if (TWOSTATE) {                   
         SUM       = false;
@@ -49,16 +51,22 @@ int main()
         PAIR_SUM  = false;
     }
 
+	//Read and process pulse information
     vector<double> fwhm;
     vector<double> var;
     vector<double> tmax;
+    vector<double> width;
     if(!TWOPULSE) {
         cout << "1 Pulse caclulcation.\n" << endl;
         vector<double> pulse1;
         file2vector("inputs/pulse_1.txt", pulse1);
-        fwhm = vector<double>(1, pulse1[0]);
-        var  = vector<double>(1, pulse1[0]);
-        tmax = vector<double>(1, pulse1[1]);
+        fwhm  = vector<double>(1);
+        var   = vector<double>(1);
+        tmax  = vector<double>(1);
+        width = vector<double>(1);
+        fwhm[0]  = pulse1[0];
+        tmax[0]  = pulse1[1];
+		width[0] = pulse1[2];
     }
     if(TWOPULSE) {
         cout << "2 Pulse caclulcation. Currently only one intensity and energy can be used for each pulse," << endl;
@@ -67,19 +75,23 @@ int main()
         vector<double> pulse2;
         file2vector("inputs/pulse_1.txt", pulse1);
         file2vector("inputs/pulse_2.txt", pulse2);
-        fwhm = vector<double>(2);
-        var  = vector<double>(2);
-        tmax = vector<double>(2);
-        fwhm[0] = pulse1[0]; 
-        fwhm[1] = pulse2[0]; 
-        tmax[0] = pulse1[1]; 
-        tmax[1] = pulse2[1]; 
+        fwhm  = vector<double>(2);
+        var   = vector<double>(2);
+        tmax  = vector<double>(2);
+        width = vector<double>(2);
+        fwhm[0]  = pulse1[0]; 
+        fwhm[1]  = pulse2[0]; 
+        tmax[0]  = pulse1[1]; 
+        tmax[1]  = pulse2[1]; 
+        width[0] = pulse1[2]; 
+        width[1] = pulse2[2]; 
     }
     for (int i = 0; i < static_cast<int>(var.size()); i++) {
         var[i]  = (fwhm[i] * 41.34137) / (2 * pow(2 * log(2), 0.5));  //convert FWHM to sigma
         tmax[i] *= 41.34137;
     }
 
+	//Read and process time information
     vector<double> time_info;
     double tstart;
     file2vector("inputs/time_info.txt", time_info);
@@ -94,7 +106,8 @@ int main()
     int nt      = round((tend-tstart)/dt);
     int n_print = time_info[3]; //the every nth timestep that get printed
 
-    std::vector<int> n_states;       //read total number and number of valence states from file
+	//Read in number of states, pairs and groups
+    std::vector<int> n_states;       
     file2vector("inputs/n_states.txt", n_states);
     int neqn       = n_states[0];
     int n_sum_type = n_states[1];
@@ -104,9 +117,38 @@ int main()
     if (TWOSTATE) {
         neqn = 2;
         n_type = 2;
-    }     
+    }
 
-    //central photon energy and bandwidth sampling
+	//Read x, y and z direction matrices: see read_matrix.cpp   
+    vector<arma::mat> Matrix (3); 
+	if (!TWOSTATE) {
+		Matrix[0]  = read_matrix(neqn, "matrix_elements/Diagonal.txt", "matrix_elements/Off_Diagonal_x.txt");
+		Matrix[1]  = read_matrix(neqn, "matrix_elements/Diagonal.txt", "matrix_elements/Off_Diagonal_y.txt");
+		Matrix[2]  = read_matrix(neqn, "matrix_elements/Diagonal.txt", "matrix_elements/Off_Diagonal_z.txt");
+	}
+	if (TWOSTATE) {
+		Matrix[0]  = read_matrix(neqn, "matrix_elements/Diagonal.txt", "matrix_elements/Off_Diagonal_x_2STATE.txt");
+		Matrix[1]  = read_matrix(neqn, "matrix_elements/Diagonal.txt", "matrix_elements/Off_Diagonal_y_2STATE.txt");
+		Matrix[2]  = read_matrix(neqn, "matrix_elements/Diagonal.txt", "matrix_elements/Off_Diagonal_z_2STATE.txt");
+	}
+    if(PRINT_MAT) {
+        cout << Matrix[0];
+    }      
+    cout << "Matrix elements read\n" << endl;
+
+	//Read light polarization vector
+	vector<vector<double> > polarization;
+    if(!TWOPULSE) {
+        polarization = vector<vector<double> >(1);
+        file2vector("inputs/polarization_1.txt", polarization[0]); 
+    }
+    if(TWOPULSE) {
+        polarization = vector<vector<double> >(2);
+        file2vector("inputs/polarization_1.txt", polarization[0]); 
+        file2vector("inputs/polarization_2.txt", polarization[1]); 
+    }
+
+    //Central photon energy and bandwidth sampling
     std::vector<vector<double> > gw; //for bandwidth effect and 2 pulse this would need to be a vecvecvec(double)
     std::vector<vector<double> > wn; //for bandwidth effect and 2 pulse this would need to be a vecvecvec(double)
     std::vector<vector<double> > wx;     
@@ -116,10 +158,16 @@ int main()
         wx = std::vector<vector<double> >(1);     
         file2vector("inputs/photon_e_1.txt", wx[0]);
         n_photon_e = wx[0].size();
-	    for(int i = 0; i < n_photon_e; i++) wx[0][i] /=  27.2114;
+		cout << "central photon energies (eV):" << endl;
+	    for(int i = 0; i < n_photon_e; i++) {
+			cout << wx[0][i] << endl;
+			wx[0][i] /=  27.2114;
+		}	
+		cout << "\n";
         if(BANDW_AVG) { 
-            band_sample = 25;
-            double bw = (4.0 / 27.2114) / (2 * pow(2 * log(2), 0.5));
+            band_sample = 200;
+            //double bw = (0.7469 / 27.2114) / (2 * pow(2 * log(2), 0.5));
+            double bw = (2.0 / 27.2114) / (2 * pow(2 * log(2), 0.5));
             gw = std::vector<vector<double> >(n_photon_e, vector<double>(band_sample,  0.0));
             wn = std::vector<vector<double> >(n_photon_e, vector<double>(band_sample,  0.0));
             bandwidth_average(bw, gw, wn, wx[0], band_sample);
@@ -134,18 +182,21 @@ int main()
         wx = std::vector<vector<double> >(2);     
         file2vector("inputs/photon_e_1.txt", wx[0]);
         file2vector("inputs/photon_e_2.txt", wx[1]);
-	    for(int i = 0; i < n_photon_e; i++) {
-            wx[0][i] /=  27.2114;
-            wx[1][i] /=  27.2114;
-        }
+		n_photon_e = 1;
+		cout << "central photon energy for pulse 1 (eV):" << endl;
+		cout << wx[0][0] << endl;
+		wx[0][0] /=  27.2114;
+		cout << "central photon energy for pulse 2 (eV):" << endl;
+		cout << wx[1][0] << endl;
+		wx[1][0] /=  27.2114;
         cout << "No Bandwidth effect applied\n" << endl;
         band_sample = 1;
         gw = std::vector<vector<double> >(n_photon_e, vector<double>(band_sample,  1.0));
     }
 
-    //peak intensity and focal volume averaging
+    //Peak intensity and focal volume averaging
     std::vector<vector<double> > intensity;          //intensity
-    vector<vector<vector<double> > > field_strength;
+    vector<vector<vector<double> > > field_strength;	
     int n_intensity;
     int shell_sample;
     double spot_size = 2.0;                 //micron
@@ -153,6 +204,14 @@ int main()
         intensity = std::vector<vector<double> >(1);     
         file2vector("inputs/intensity_1.txt", intensity[0]);
         n_intensity = intensity[0].size();
+		cout << "Pulse intensities from input file (W/cm^2):" << endl;
+	    for(int i = 0; i < n_intensity; i++) {
+			cout << intensity[0][i] << endl;
+		}
+		if(ICALIB) {
+		cout << "Howver intensity to be determioned from saturation fluence for a given pair of transitions" << endl;
+			intensity[0][0] = icalib(Matrix, polarization, wx, spot_size, var);
+		}
 
         if(FOCAL_AVG) {
             shell_sample = 25;
@@ -171,6 +230,10 @@ int main()
         file2vector("inputs/intensity_1.txt", intensity[0]);
         file2vector("inputs/intensity_2.txt", intensity[1]);
         n_intensity = 1;
+		cout << "Intensity for pulse 1 (W/cm^2):" << endl;
+		cout << intensity[0][0] << endl;
+		cout << "Intensity for pulse 2 (W/cm^2):" << endl;
+		cout << intensity[1][0] << endl;
         cout << "No focal volume effect applied\n" << endl;
         shell_sample = 1;
         field_strength = vector<vector<vector<double> > > (2,  vector<vector<double> >(n_intensity, vector<double>(shell_sample, 0.0)));
@@ -178,7 +241,7 @@ int main()
         focal_volume_average(spot_size, field_strength[1], intensity[1], shell_sample); 
     }
 
-    //auger decay widths and phtotoionisation cross-sections
+    //Auger decay widths and phtotoionisation cross-sections
     std::vector<vector<vector<double> > > decay_widths; 
     if(!TWOPULSE) {
         decay_widths = vector<vector<vector<double> > > (1, vector<vector<double> >(2));
@@ -192,8 +255,9 @@ int main()
         file2vector("inputs/photoion_sigma_1.txt", decay_widths[0][1]);
         file2vector("inputs/photoion_sigma_2.txt", decay_widths[1][1]);
     }
-
     cout << "Decay widths read\n" << endl;
+
+    //Calculate and print population loss channels
     vector<string> decay_channels;
     int n_decay_chan = 0;
     if(DECAY_AMP) {
@@ -209,35 +273,8 @@ int main()
         n_type     += n_type     * n_decay_chan;
         n_sum_type += n_sum_type * n_decay_chan;
     }
-
-    vector<vector<double> > polarization;
-    if(!TWOPULSE) {
-        polarization = vector<vector<double> >(1);
-        file2vector("inputs/polarization_1.txt", polarization[0]); 
-    }
-    if(TWOPULSE) {
-        polarization = vector<vector<double> >(2);
-        file2vector("inputs/polarization_1.txt", polarization[0]); 
-        file2vector("inputs/polarization_2.txt", polarization[1]); 
-    }
-
-    int ndim = 3;
-    size_t ndimall = 4;
-    std::string xyzall[ndimall] = {"x", "y", "z", "all"};
-    vector<arma::mat> Matrix (ndim); //read  x, y and z direction matrices: see read_matrix.cpp   
-    for(int i = 0; i < ndim; i++) {
-        if (!TWOSTATE) {
-            Matrix[i]  = read_matrix(neqn, "matrix_elements/Diagonal.txt", "matrix_elements/Off_Diagonal_"+xyzall[i]+".txt");
-        }
-        if (TWOSTATE) {
-            Matrix[i]  = read_matrix(neqn, "matrix_elements/Diagonal_2STATE.txt", "matrix_elements/Off_Diagonal_"+xyzall[i]+"_2STATE.txt"); 
-        }
-    }
-    if(PRINT_MAT) {
-        cout << Matrix[0];
-    }      
-    cout << "Matrix elements read\n" << endl;
-
+	
+	//Sample single or multiple photon energies and or intensities
     int  n_calc = 0;
     bool ECALC  = true;
     if ( n_intensity > 1 and n_photon_e == 1 ) {
@@ -258,6 +295,7 @@ int main()
             }
     }
 
+	//Print time information
     cout << "Time details:" << endl;
     cout << "Start time: "  << tstart << " a.u " << " / " << tstart/41.34137 << " fs"<< endl;
     cout << "End time: "    << tend   << " a.u " << " / " << tend/41.34137   << " fs"<< endl;
@@ -265,6 +303,7 @@ int main()
     cout << "Number of steps:" << nt << endl;
     cout << "Print every " << n_print << " steps\n" << endl;
 
+	//Print pulse information
     cout << "Pulse details:" << endl;
     for (int i = 0; i < static_cast<int>(var.size()); i++) {
         cout << "*** Pulse " <<  i + 1 << " ***" <<endl;
@@ -286,6 +325,14 @@ int main()
     //for group_sum, if SUM=true
     vector<vector<vec1x > > pt_sum_vec(n_calc, vector<vec1x > (n_sum_type, vec1x (nt, complexd(0.0,0.0))));
     vector<vector<vec1x > > pt_sum_vec_perp(n_calc, vector<vec1x > (n_sum_type, vec1x (nt, complexd(0.0,0.0))));
+	
+	//WRITE SUMMED data to files 
+	FILEWRITER WRITEFILES;
+	
+	WRITEFILES.nt = nt;
+	WRITEFILES.n_type = n_type;
+	WRITEFILES.n_sum_type = n_sum_type;
+	WRITEFILES.n_print = n_print;
 
     clock_t startTime;    
     for(int ei = 0; ei < n_calc; ei++) {
@@ -321,13 +368,12 @@ int main()
             }
             cout << "Sum complete" << endl;
         }
-        
         //sum degenerate pairs of pi states, need to list the pairs in inputs/state_pairs.txt
         if (!TWOSTATE) {
             if (PAIR_SUM) {
                 pair_sum(nt, n_type, n_decay_chan, pt_vec[ei], pt_vec_avg[ei]);
             }
-            else {
+            if (!PAIR_SUM) {
                 pt_vec = pt_vec_avg;
             }       
         }
@@ -338,24 +384,15 @@ int main()
             if (PAIR_SUM) {
                 pair_sum(nt, n_type, n_decay_chan, pt_vec_perp[ei], pt_vec_avg_perp[ei]);
             }      
-            else {
+            if (!PAIR_SUM) {
                 pt_vec_perp = pt_vec_avg_perp;
             }      
         }       
-        //WRITE SUMMED data to files
-      
-        FILEWRITER WRITEFILES;
-        
-         WRITEFILES.nt = nt;
-         WRITEFILES.n_type = n_type;
-         WRITEFILES.n_sum_type = n_sum_type;
-         WRITEFILES.n_print = n_print;
-         WRITEFILES.tf_vec = tf_vec;
 
-        WRITEFILES.write_data_files(convertInt(ei), pt_vec[ei], pt_sum_vec[ei], pt_vec_perp[ei], pt_sum_vec_perp[ei], norm_t_vec_avg[ei], norm_t_vec_avg_perp[ei], SUM, PERP_AVG);
+		WRITEFILES.tf_vec = tf_vec;
+		WRITEFILES.write_data_files(convertInt(ei), pt_vec[ei], pt_sum_vec[ei], pt_vec_perp[ei], pt_sum_vec_perp[ei], norm_t_vec_avg[ei], norm_t_vec_avg_perp[ei], SUM, PERP_AVG);
     }
 
-    FILEWRITER WRITEFILES;
     if (n_calc > 1) { //only for 1 pulse calc over mutiple intensities or energies
         WRITEFILES.write_data_variable_files(n_photon_e, n_calc, intensity[0], wx[0], pt_vec, pt_sum_vec, pt_vec_perp, pt_sum_vec_perp, SUM, ECALC, PERP_AVG);
         

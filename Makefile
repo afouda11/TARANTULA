@@ -1,8 +1,9 @@
 EXEC = tarantula
-CXX = g++-10             
-OPTS = -O2 -Wall -g -I
+CXX = g++      
+OPTS = -O2 -Wall -I
 #CFLAGS = $(OPTS) -larmadillo -fopenmp 
-CFLAGS = $(OPTS) /Users/afouda/armadillo-9.900.2/include -fopenmp -framework Accelerate
+CFLAGS = $(OPTS) /home/oxygen/FOUDAAE/armadillo-install/include -fopenmp
+CXXFLAGS = -std=c++11
 LDFLAGS = -fopenmp 
 
 INCDIR =./include
