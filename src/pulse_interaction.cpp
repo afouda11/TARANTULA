@@ -22,14 +22,11 @@
 #endif
 
 
-double gaussian_field(double t, double t_max, double amp_max, double var)
-{
-   	double Et = amp_max * exp(-1 * (pow((t - t_max),2)) / (2 * (pow(var,2))));
+TDSEUTILITY::TDSEUTILITY(void){
 
-	return Et;
 }
 
-double icalib(vector<arma::mat> Matrix, vector<vector<double> > polarization, std::vector<vector<double> > wx, double spot_size, vector<double> var) 
+double TDSEUTILITY::icalib(vector<arma::mat> Matrix, vector<vector<double> > mu, std::vector<vector<double> > wx, double spot_size, vector<double> var) 
 {
 
 	int col1, col2;
@@ -43,15 +40,15 @@ double icalib(vector<arma::mat> Matrix, vector<vector<double> > polarization, st
 		two.push_back(col2);
 	}
 	double tdm_1, tdm_2;
-	if(polarization[0][0] == 1.0) {
+	if(mu[0][0] == 1.0) {
 		tdm_1 = Matrix[0](one[0], two[0]);
 		tdm_2 = Matrix[0](one[1], two[1]);
 	}
-	if(polarization[0][1] == 1.0) {
+	if(mu[0][1] == 1.0) {
 		tdm_1 = Matrix[1](one[0], two[0]);
 		tdm_2 = Matrix[1](one[1], two[1]);
 	}
-	if(polarization[0][2] == 1.0) {
+	if(mu[0][2] == 1.0) {
 		tdm_1 = Matrix[2](one[0], two[0]);
 		tdm_2 = Matrix[2](one[1], two[1]);
 	}
@@ -74,8 +71,7 @@ double icalib(vector<arma::mat> Matrix, vector<vector<double> > polarization, st
 
 }
 
-
-void focal_volume_average(double spot_size, vector<vector<double> >& field_strength, vector<double> intensity, int shell_sample)
+void TDSEUTILITY::focal_volume_average(double spot_size, vector<vector<double> >& field_strength, vector<double> intensity, int shell_sample)
 {
     if (shell_sample > 1) { 
         cout << "Sampling " << intensity.size() << " pulse intensities." << endl;
@@ -98,15 +94,14 @@ void focal_volume_average(double spot_size, vector<vector<double> >& field_stren
             field_strength[i][j]  = pow(field_strength[i][j], 0.5);
         }
     }
-    return;
-}
+    return;}
 
-void bandwidth_average(double bw, std::vector<vector<double> >& gw, std::vector<vector<double> >& wn, std::vector<double> wx, int band_sample)
+void TDSEUTILITY::bandwidth_average(double bw, std::vector<vector<double> >& gw, std::vector<vector<double> >& wn, std::vector<double> wx, vector<double> bandwidth_avg)
 {
     cout << "Sampling " << wx.size() << " central photon energies." << endl;
-    cout << "for each central photon energy the " << bw * 27.2114 << " eV " << "bandwith effect will sample " << band_sample << " energies.\n" << endl;
+    cout << "for each central photon energy the " << bw * 27.2114 << " eV " << "bandwith effect will sample " << bandwidth_avg[0] << " energies.\n" << endl;
     for(int i = 0; i < static_cast<int>(wx.size()); i++) {
-        double step = ((wx[i] + (3 * bw)) - (wx[i] - (3 * bw))) / band_sample;
+        double step = ((wx[i] + (bandwidth_avg[1] * bw)) - (wx[i] - (bandwidth_avg[1] * bw))) / bandwidth_avg[0];
         for(int j = 0; j < static_cast<int>(gw[i].size()); j++) {
              wn[i][j] = (wx[i] - (3 * bw)) + (j * step);
              gw[i][j] = exp( (-1 * pow(wn[i][j] - wx[i], 2)) / (2 * pow(bw, 2) ) ) / pow(2 * M_PI * pow(bw, 2), 0.5);
@@ -116,11 +111,7 @@ void bandwidth_average(double bw, std::vector<vector<double> >& gw, std::vector<
     return;
 }   
 
-void rk4_run(int ei, int shell_sample, int band_sample, int neqn, int nt, double tstart, double dt,
-vector<double> tmax, vector<vector<vector<double> > > field_strength, vector<vector<double> > gw, vector<vector<double> >
-wn, vector<double> var, vector<vector<double> > wx, vector<arma::mat> Matrix, vector<vector<double> > polarization,
-vector<vector<vector<double> > > decay_widths, vector<string> decay_channels, bool RWA, bool ECALC, bool DECAY, bool TWOPULSE, bool GAUSS, bool
-BANDW_AVG, bool STARK, bool WRITE_PULSE, bool DECAY_AMP, vector<double>& tf_vec, vector<vec1x >& pt_vec_avg, vector<double>& norm_t_vec_avg)
+void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec_avg, vector<double>& norm_t_vec_avg)
 {
 
     vector<double>          gw_;
@@ -128,29 +119,29 @@ BANDW_AVG, bool STARK, bool WRITE_PULSE, bool DECAY_AMP, vector<double>& tf_vec,
     vector<vector<double> > field_strength_;
     vector<double>          wx_;
     
-    if(!TWOPULSE) {
+    if(!BOOL_VEC[5]) {
         field_strength_ = vector<vector<double> >(1);
         wx_             = vector<double>(1);
-        if(ECALC) {
+        if(BOOL_VEC[15]) {
             cout << "Begining TDSE RK4 dynamics for energy calculation " << ei + 1 << "\n" << endl;
             field_strength_[0] = field_strength[0][0]; 
             gw_                = gw[ei];
-            if(BANDW_AVG) {
+            if(BOOL_VEC[4]) {
                 wn_                = wn[ei];
             }     
             wx_[0]             = wx[0][ei];
         }
-        if(!ECALC) {
+        if(!BOOL_VEC[15]) {
             cout << "Begining TDSE RK4 dynamics for intensity calculation " << ei + 1 << "\n" << endl;
             field_strength_[0]  = field_strength[0][ei];
             gw_                 = gw[0];
-            if(BANDW_AVG) {
+            if(BOOL_VEC[4]) {
                 wn_                 = wn[0];
             }      
             wx_[0]              = wx[0][0];
         }
     }
-    if(TWOPULSE) {
+    if(BOOL_VEC[5]) {
         field_strength_ = vector<vector<double> >(2);
         wx_             = vector<double>(2);
         gw_                = gw[0];
@@ -167,6 +158,14 @@ BANDW_AVG, bool STARK, bool WRITE_PULSE, bool DECAY_AMP, vector<double>& tf_vec,
   	const complex<double> I(0,1);
     vector<vector<double> > field (wx_.size(), vector<double> (nt, 0.0));
 
+	EOMDRIVER DRIVEEOM;
+	DRIVEEOM.neqn = neqn;
+	DRIVEEOM.Matrix = Matrix;
+	DRIVEEOM.mu = mu;
+	DRIVEEOM.decay_widths = decay_widths;
+	DRIVEEOM.decay_channels = decay_channels;
+	DRIVEEOM.BOOL_VEC = BOOL_VEC;
+
     #pragma omp parallel for collapse(2)
     for(int a = 0; a < shell_sample; a++) {
         for(int b = 0; b < band_sample; b++) {
@@ -181,35 +180,37 @@ BANDW_AVG, bool STARK, bool WRITE_PULSE, bool DECAY_AMP, vector<double>& tf_vec,
 			    double tf = t0 + dt;
                 
 			    vector<double> Et;
-                if(!TWOPULSE) {
+                if (!BOOL_VEC[5]) {
                     Et = vector<double>(1);
-                    if (GAUSS) {
+                    if (BOOL_VEC[1]) {
                         Et[0] = gaussian_field(tf, tmax[0], field_strength_[0][a] * gw_[b], var[0]);
                     }
-                    if (!GAUSS) {
+                    if (!BOOL_VEC[1]) {
                         Et[0] = field_strength_[0][a] * gw_[b];
                     }      
                 }
-                if(TWOPULSE) {
+                if (BOOL_VEC[5]) {
                     Et = vector<double>(2);
-                    if (GAUSS) {
+                    if (BOOL_VEC[1]) {
                         Et[0] = gaussian_field(tf, tmax[0], field_strength_[0][a] * gw_[b], var[0]);
                         Et[1] = gaussian_field(tf, tmax[1], field_strength_[1][a] * gw_[b], var[1]);
                     }
-                    if (!GAUSS) {
+                    if (!BOOL_VEC[1]) {
                         Et[0] = field_strength_[0][a] * gw_[b];
                         Et[1] = field_strength_[1][a] * gw_[b];
                     }
                 }
-                if(BANDW_AVG) {
+                if (BOOL_VEC[4]) {
                     wx_[0] = wn_[b];
                 }
+				DRIVEEOM.Et = Et;
+				DRIVEEOM.wx = wx_;
 
-			    rk4(neqn, y, t0, tf, Matrix, polarization, Et, wx_, decay_widths, decay_channels, RWA, DECAY, TWOPULSE, STARK, DECAY_AMP);
+			    DRIVEEOM.RK4(y, t0, tf);
                
                 if(ei == 0 and a == 0 and b == 0) {
                     for(int n = 0; n < static_cast<int>(field.size()); n++) {
-                        if(!RWA) {
+                        if(!BOOL_VEC[0]) {
                             field[n][i] = Et[n] * cos(wx_[n] * tf);
 
                             }           
@@ -255,7 +256,7 @@ BANDW_AVG, bool STARK, bool WRITE_PULSE, bool DECAY_AMP, vector<double>& tf_vec,
 
         norm_t_vec_avg[i] /= (shell_sample * band_sample);
     }
-    if(WRITE_PULSE) {
+    if (BOOL_VEC[11]) {
         if(ei == 0) {
             for(int n = 0; n < static_cast<int>(field.size()); n++) {
                 write_field("outputs/gnu/pulse_"+convertInt(n)+".txt", nt, 100, tf_vec, field[n]);
@@ -268,4 +269,9 @@ BANDW_AVG, bool STARK, bool WRITE_PULSE, bool DECAY_AMP, vector<double>& tf_vec,
 
 }
 
+double TDSEUTILITY::gaussian_field(double t, double t_max, double amp_max, double var)
+{
+   	double Et = amp_max * exp(-1 * (pow((t - t_max),2)) / (2 * (pow(var,2))));
 
+	return Et;
+}

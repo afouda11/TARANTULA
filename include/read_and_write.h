@@ -27,23 +27,29 @@ class FILEWRITER {
 
 public:
 
-    int nt;
+	FILEWRITER(void); 
+
+	int nt;
     int n_type;
     int n_sum_type;
     int n_print;
     vector<double> tf_vec;
+	vector<bool> BOOL_VEC;
+	int n_photon_e;
+	int n_calc;
+	int neqn;
+	vector<double> variable;
+	string varstring;
 
-FILEWRITER(void);
+void write_data_files(string outfilename, vector<vec1x> pt_vec, vector<vec1x> pt_sum_vec, vector<vec1x>& pt_vec_perp, vector<vec1x>& pt_sum_vec_perp, vector<double> norm_t_vec_avg, vector<double>& norm_t_vec_avg_perp);
 
-void write_data_files(string outfilename, vector<vec1x> pt_vec, vector<vec1x> pt_sum_vec, vector<vec1x>& pt_vec_perp, vector<vec1x>& pt_sum_vec_perp, vector<double> norm_t_vec_avg, vector<double>& norm_t_vec_avg_perp, bool SUM, bool PERP_AVG);
-
-void write_data_variable_files(int n_photon_e, int n_calc, vector<double> intensity, vector<double> wx, vector<vector<vec1x> > pt_vec, vector<vector<vec1x> > pt_sum_vec, vector<vector<vec1x> > pt_vec_perp, vector<vector<vec1x> > pt_sum_vec_perp, bool SUM, bool ECALC, bool PERP_AVG);
+void write_data_variable_files(vector<vector<vec1x> > pt_vec, vector<vector<vec1x> > pt_sum_vec, vector<vector<vec1x> > pt_vec_perp, vector<vector<vec1x> > pt_sum_vec_perp);
 
 private:
 
-void write_data(string outfilename, int neqn, vector<vec1x > pt_vec, vector<double> norm_t_vec, bool GNUPLOT_OUT); 
+void write_data(string outfilename, int ncol, vector<vec1x > pt_vec, vector<double> norm_t_vec, bool GNUPLOT_OUT); 
 
-void write_data_variable(string outfilename, int n_calc, int neqn, vector<double> variable, vector<vector<vec1x > > pt_vec, bool GNUPLOT_OUT);
+void write_data_variable(string outfilename, int ncol, vector<vector<vec1x > > pt_vec, bool GNUPLOT_OUT);
 
 };
 

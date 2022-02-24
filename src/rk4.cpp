@@ -16,9 +16,11 @@
 #include <omp.h>
 #endif
 
-void rk4(int neqn, vec1x & y, double t0, double tf, vector<arma::mat> Matrix, vector<vector<double> >
-polarization, vector<double> Et, vector<double> wx, vector<vector<vector<double> > > decay_widths, vector<string>
-decay_channels, bool RWA, bool DECAY, bool TWOPULSE, bool STARK, bool DECAY_AMP){
+EOMDRIVER::EOMDRIVER(void){
+
+}
+
+void EOMDRIVER::RK4(vec1x & y, double t0, double tf) {
   
   double dt = tf - t0;
   double tc = t0 + 0.5* dt;
@@ -33,28 +35,28 @@ decay_channels, bool RWA, bool DECAY, bool TWOPULSE, bool STARK, bool DECAY_AMP)
   vec1x  ytemp (neqn, complexd (0,0) );
   
   // step k1
-  REQ(t0, neqn, y, k1, Matrix, polarization, Et, wx, decay_widths, decay_channels, RWA, DECAY, TWOPULSE, STARK, DECAY_AMP);
+  REQ(t0, y, k1);
   
   for (int i = 0; i< neqn; i++){
     ytemp[i] = y[i] + dt2*k1[i];
   }
   
   // step k2
-  REQ(tc, neqn, ytemp, k2, Matrix, polarization, Et, wx, decay_widths, decay_channels, RWA, DECAY, TWOPULSE, STARK, DECAY_AMP);
+  REQ(tc, ytemp, k2);
   
   for (int i = 0; i< neqn; i++){
     ytemp[i] = y[i] + dt2*k2[i];
   }
   
   // step k3
-  REQ(tc, neqn, ytemp, k3, Matrix, polarization, Et, wx, decay_widths, decay_channels, RWA, DECAY, TWOPULSE, STARK, DECAY_AMP);
+  REQ(tc, ytemp, k3);
   
   for (int i = 0; i< neqn; i++){
     ytemp[i] = y[i] + dt*k3[i];
   }
   
   // step k4
-  REQ(tf, neqn, ytemp, k4, Matrix, polarization, Et, wx, decay_widths, decay_channels, RWA, DECAY, TWOPULSE, STARK, DECAY_AMP);
+  REQ(tf, ytemp, k4);
   
   for (int i = 0; i< neqn; i++){
     y[i] = y[i] + dt6*(k1[i] + 2.0*k2[i]+ 2.0*k3[i]+ k4[i]);
@@ -66,9 +68,7 @@ decay_channels, bool RWA, bool DECAY, bool TWOPULSE, bool STARK, bool DECAY_AMP)
 /*
  solution:
 */
-void REQ(double t, int neqn, vec1x y, vec1x & dydt, vector<arma::mat> Matrix, vector<vector<double> >
-polarization, vector<double> Et, vector<double> wx, vector<vector<vector<double> > > decay_widths, vector<string>
-decay_channels, bool RWA, bool DECAY, bool TWOPULSE, bool STARK, bool DECAY_AMP){
+void EOMDRIVER::REQ(double t, vec1x y, vec1x & dydt){
   
     int n_decay_chan = static_cast<int>(decay_channels.size());
 
@@ -79,8 +79,8 @@ decay_channels, bool RWA, bool DECAY, bool TWOPULSE, bool STARK, bool DECAY_AMP)
     vector<vector<double> > photo_gamma;
     vector<vector<double> > photo_sigma;
 
-    if (DECAY) { 
-        if(!TWOPULSE) {
+    if (BOOL_VEC[2]) { 
+        if(!BOOL_VEC[5]) {
             auger_gamma = vector<vector<double> > (1, vector<double>(n, 0.0));
             photo_sigma = vector<vector<double> > (1, vector<double>(n, 0.0));
             photo_gamma = vector<vector<double> > (1, vector<double>(n, 0.0));
@@ -90,7 +90,7 @@ decay_channels, bool RWA, bool DECAY, bool TWOPULSE, bool STARK, bool DECAY_AMP)
                 photo_gamma[0][i] = (photo_sigma[0][i] / wx[0]) * pow(Et[0],2);
             }       
         }      
-        if(TWOPULSE) {
+        if (BOOL_VEC[5]) {
             auger_gamma = vector<vector<double> > (2, vector<double>(n, 0.0));
             photo_sigma = vector<vector<double> > (2, vector<double>(n, 0.0));
             photo_gamma = vector<vector<double> > (2, vector<double>(n, 0.0));
@@ -107,13 +107,13 @@ decay_channels, bool RWA, bool DECAY, bool TWOPULSE, bool STARK, bool DECAY_AMP)
             }        
         }      
     }
-    if (!DECAY) {
-        if(!TWOPULSE) {
+    if (!BOOL_VEC[2]) {
+        if(!BOOL_VEC[5]) {
             auger_gamma = vector<vector<double> > (1, vector<double>(n, 0.0));
             photo_sigma = vector<vector<double> > (1, vector<double>(n, 0.0));
             photo_gamma = vector<vector<double> > (1, vector<double>(n, 0.0));
         }     
-        if(TWOPULSE) {
+        if(BOOL_VEC[5]) {
             auger_gamma = vector<vector<double> > (2, vector<double>(n, 0.0));
             photo_sigma = vector<vector<double> > (2, vector<double>(n, 0.0));
             photo_gamma = vector<vector<double> > (2, vector<double>(n, 0.0));
@@ -121,11 +121,11 @@ decay_channels, bool RWA, bool DECAY, bool TWOPULSE, bool STARK, bool DECAY_AMP)
     }
 
     double R = 0.0;
-    if(!TWOPULSE) {
+    if(!BOOL_VEC[5]) {
 	    //DIAGONAL	
 	    for (int j = 0; j < n; j++) {
-            if(STARK) {
-                R = Stark_Shift(j, Et[0], auger_gamma[0][j] + photo_gamma[0][j], auger_gamma[0], photo_gamma[0], n, wx[0], Matrix[0], polarization[0]);
+            if(BOOL_VEC[10]) {
+                R = Stark_Shift(j, auger_gamma[0], photo_gamma[0], n);
                 dydt[j] = ( Matrix[0](j,j) - ( I * ( ((auger_gamma[0][j] + photo_gamma[0][j]) /2.0) + (I * R) ) ) ) * y[j];
             }
             else {
@@ -133,109 +133,124 @@ decay_channels, bool RWA, bool DECAY, bool TWOPULSE, bool STARK, bool DECAY_AMP)
             }     
 	        //OFF DIAGONAL
 		    for (int i = 0;  i < n; i++) {
-	            double dipole_mat_element = ( (Matrix[0](i,j) * polarization[0][0]) + (Matrix[1](i,j) * polarization[0][1]) + (Matrix[2](i,j) * polarization[0][2]) ); 
-			    if (RWA) {
+	            double dipole_mat = 0.0;
+				Dipole_Matrix_Element(dipole_mat ,mu[0], i, j); 
+			    if (BOOL_VEC[0]) {
 				    if (i != j) {
 					    if (j > i ) {
-						    dydt[j] += (( ((dipole_mat_element * Et[0] * exp(-1.0 * I * wx[0] * t))) / 2.0) * y[i]);
+						    dydt[j] += ((((dipole_mat * Et[0] * exp(-1.0 * I * wx[0] * t))) / 2.0) * y[i]);
 					    }
 					    if (j < i ) {
-						    dydt[j] += (( ((dipole_mat_element * Et[0] * exp(1.0 * I * wx[0] * t))) / 2.0) * y[i]);
+						    dydt[j] += ((((dipole_mat * Et[0] * exp(1.0 * I * wx[0] * t))) / 2.0) * y[i]);
 					    }
 				    }
  			    }
-			    if (!RWA) {
+			    if (!BOOL_VEC[0]) {
 				    if (i != j) {
-					    dydt[j] += (dipole_mat_element * Et[0] * cos(wx[0] * t)) * y[i];	
+					    dydt[j] += (dipole_mat * Et[0] * cos(wx[0] * t)) * y[i];	
 				    }
 			    }
 		    }	 
 		    dydt[j] /= I;		
 	    }
     }
-    if(TWOPULSE) {
+    if (BOOL_VEC[5]) {
 	    //DIAGONAL need to check how the augers would be treated for two different core hole lifetimes
         for (int j = 0; j < n; j++) {
-                dydt[j] = (Matrix[0](j,j) - ((I * (((auger_gamma[0][j] + auger_gamma[1][j]) * 0.5) + photo_gamma[0][j] + photo_gamma[1][j]) )/2.0) ) * y[j];
+				complex<double> d1 = 0.0;
+				d1 = (I *(((auger_gamma[0][j]+auger_gamma[1][j])*0.5) + photo_gamma[0][j]+photo_gamma[1][j]))/2.0;
+                dydt[j] = (Matrix[0](j,j) - d1) * y[j];
 	        //OFF DIAGONAL
             for (int i = 0;  i < n; i++) {
-	            vector<double> dipole_mat_element(2); 
-                dipole_mat_element[0] = ( (Matrix[0](i,j) * polarization[0][0]) + (Matrix[1](i,j) * polarization[0][1]) + (Matrix[2](i,j) * polarization[0][2]) );
-                dipole_mat_element[1] = ( (Matrix[0](i,j) * polarization[1][0]) + (Matrix[1](i,j) * polarization[1][1]) + (Matrix[2](i,j) * polarization[1][2]) ); 
-			    if (RWA) {
+				complex<double> offd1 = 0.0;
+				complex<double> offd2 = 0.0;
+	            vector<double> dipole_mat(2);
+				Dipole_Matrix_Element(dipole_mat[0], mu[0], i, j);
+				Dipole_Matrix_Element(dipole_mat[1], mu[1], i, j);
+                //dipole_mat[0]=(Matrix[0](i,j)*mu[0][0])+(Matrix[1](i,j)*mu[0][1])+(Matrix[2](i,j)*mu[0][2]);
+                //dipole_mat[1]=(Matrix[0](i,j)*mu[1][0])+(Matrix[1](i,j)*mu[1][1])+(Matrix[2](i,j)*mu[1][2]); 
+			    if (BOOL_VEC[0]) {
 				    if (i != j) {
 					    if (j > i ) {
-						    dydt[j] += ( ( ((dipole_mat_element[0] * Et[0] * exp(-1.0 * I * wx[0] * t)) + (dipole_mat_element[1] * Et[1] * exp(-1.0 * I * wx[1] * t))) / 2.0) * y[i]);
+							offd1 = dipole_mat[0] * Et[0] * exp(-1.0 * I * wx[0] * t);
+							offd2 = dipole_mat[1] * Et[1] * exp(-1.0 * I * wx[1] * t);
+						    dydt[j] += (((offd2 + offd2) / 2.0) * y[i]);
 					    }
 					    if (j < i ) {
-						    dydt[j] += ( ( ((dipole_mat_element[0] * Et[0] * exp( 1.0 * I * wx[0] * t)) + (dipole_mat_element[1] * Et[1] * exp( 1.0 * I * wx[1] * t))) / 2.0) * y[i]);
+							offd1 = (dipole_mat[0] * Et[0] * exp( 1.0 * I * wx[0] * t));
+							offd2 = (dipole_mat[1] * Et[1] * exp( 1.0 * I * wx[1] * t));
+						    dydt[j] += (((offd1 + offd2) / 2.0) * y[i]);
 					    }
 				    }
  			    }
-			    if (!RWA) {
+			    if (!BOOL_VEC[0]) {
 				    if (i != j) {
-					    dydt[j] += ( (dipole_mat_element[0] * Et[0] * cos(wx[0] * t)) + (dipole_mat_element[1] * Et[1] * cos(wx[1] * t)) ) * y[i];	
+						offd1 = (dipole_mat[0] * Et[0] * cos(wx[0] * t));
+						offd2 = (dipole_mat[1] * Et[1] * cos(wx[1] * t));
+					    dydt[j] += (offd1 + offd2) * y[i];	
 				    }
 			    }
 		    }
 	        dydt[j] /= I;		
         }
     }
-    if(DECAY_AMP && !TWOPULSE) {
-        for(int i = 0; i < n_decay_chan; i++) {
-            
-            for (int j = (n * (i+1)); j < n * (i+2); j++) {
-				//cout << j-(n*(i+1)) << endl;
-                if (decay_channels[i] == "PHOTO_TOTAL" ) {
-                    //dydt[j] = (y[j] * Matrix[0](j-(n*(i+1)),j-(n*(i+1)))) + (y[j-(n*(i+1))] * photo_gamma[0][j-(n*(i+1))]);
-                    //dydt[j] += ( y[j-(n*(i+1))] + ( y[j-(n*(i+1))] * (-1.0 * I * photo_gamma[0][j-(n*(i+1))] * 0.5) ) );
-                    //dydt[j] += ( y[j] + ( y[j-(n*(i+1))] * (-1.0 * I * photo_gamma[0][j-(n*(i+1))] * 0.5) ) );
-                    //dydt[j] = dydt[j-(n*(i+1))];
-                    //dydt[j] = dydt[0];
-                    dydt[j] = ( y[j-(n*(i+1))] * (-1.0 * I * photo_gamma[0][j-(n*(i+1))] * 0.5) ) ;
-					//dydt[j] = I * photo_gamma[0][j-(n*(i+1))] * 0.5;
-                }
-                if (decay_channels[i] == "AUGER" ) {
-                    //dydt[j] = (y[j] * Matrix[0](j-(n*(i+1)),j-(n*(i+1)))) + (y[j-(n*(i+1))] * pow(auger_gamma[0][j-(n*(i+1))] / 2* M_PI, 0.5));
-                    //dydt[j] += ( y[j-(n*(i+1))] + ( y[j-(n*(i+1))] * (-1.0 * I * auger_gamma[0][j-(n*(i+1))] * 0.5) ) );
-                    //dydt[j] += ( y[j] + ( y[j-(n*(i+1))] * (-1.0 * I * auger_gamma[0][j-(n*(i+1))] * 0.5) ) );
-                    //dydt[j] = dydt[j-(n*(i+1))];
-					//dydt[j] = I * auger_gamma[0][j-(n*(i+1))] * 0.5;
-                    dydt[j] = ( y[j-(n*(i+1))] * (-1.0 * I * auger_gamma[0][j-(n*(i+1))] * 0.5) );
-                }
-                if (decay_channels[i] == "AUGER+PHOTO_TOTAL" ) {
-                    //dydt[j] = (y[j] * Matrix[0](j-(n*(i+1)),j-(n*(i+1)))) + (y[j-(n*(i+1))] * pow((auger_gamma[0][j-(n*(i+1))] + photo_gamma[0][j-(n*(i+1))])/2* M_PI, 0.5));
-                    //dydt[j] += ( y[j-(n*(i+1))] + ( y[j-(n*(i+1))] * (-1.0 * I * (auger_gamma[0][j-(n*(i+1))] + photo_gamma[0][j-(n*(i+1))]) * 0.5) ) );
-                    //dydt[j] += ( y[j] + ( y[j-(n*(i+1))] * (-1.0 * I * (auger_gamma[0][j-(n*(i+1))] + photo_gamma[0][j-(n*(i+1))]) * 0.5) ) );
-                    //dydt[j] = dydt[j-(n*(i+1))];
-					//dydt[j] = I * (auger_gamma[0][j-(n*(i+1))] + photo_gamma[0][j-(n*(i+1))])* 0.5;
-                    dydt[j] = ( y[j-(n*(i+1))] * (-1.0 * I * (auger_gamma[0][j-(n*(i+1))] + photo_gamma[0][j-(n*(i+1))]) * 0.5) );
-                }
+    if(BOOL_VEC[13] && !BOOL_VEC[5]) {
+
+        for(int k = 0; k < n_decay_chan; k++) {
+
+        	for (int j = (n * (k+1)); j < n * (k+2); j++) {
+
+				dydt[j]  += y[j] * Matrix[0](j-(n*(k+1)),j-(n*(k+1)));
+
+				if (decay_channels[k] == "PHOTO_TOTAL" ) {
+					dydt[j] += (y[j-(n*(k+1))] * pow((photo_gamma[0][j-(n*(k+1))] / (2*M_PI)),0.5));
+					//dydt[j] += (y[j] * pow((photo_gamma[0][j-(n*(k+1))] / (2*M_PI)),0.5));
+				}
+				if (decay_channels[k] == "AUGER" ) {
+					dydt[j] += (y[j-(n*(k+1))] * pow((auger_gamma[0][j-(n*(k+1))] / (2*M_PI)),0.5));
+					//dydt[j] += (y[j] * pow((auger_gamma[0][j-(n*(k+1))] / (2*M_PI)),0.5));
+				}
+/*
+            	for (int i = (n * (k+1)); i < n * (k+2); i++) {
+				    if (i != j) {
+						if (decay_channels[k] == "PHOTO_TOTAL" ) {
+							dydt[j] += (y[j-(n*(k+1))] * pow((photo_gamma[0][j-(n*(k+1))] / (2*M_PI)),0.5));
+						}
+						if (decay_channels[k] == "AUGER" ) {
+							dydt[j] += (y[j-(n*(k+1))] * pow((auger_gamma[0][j-(n*(k+1))] / (2*M_PI)),0.5));
+						}
+					}	
+				}
+*/
                 dydt[j] /= I;
             }
-        }       
-        
+        }        
     }
+
     return;
 
 }
 
-double Stark_Shift(int state, double Et, double gamma_state, vector<double> auger_i, vector<double> photo_i, int n, double wx, arma::mat Matrix, vector<double> polarization) {
-
+double EOMDRIVER::Stark_Shift(int state, vector<double> auger_i, vector<double> photo_i, int n) 
+{
     double R = 0.0;
+	double gamma_state = auger_i[state] + photo_i[state]; 
     for (int i = 0;  i < n; i++) {
 
-        double dipole_mat_element = ( (Matrix(i,state) * polarization[0]) + (Matrix(i,state) * polarization[1]) + (Matrix(i,state) * polarization[2]) );
-        double w_statei = Matrix(i,i) - Matrix(state,state); 
+        double dipole_mat = ((Matrix[0](i,state)*mu[0][0])+(Matrix[0](i,state)*mu[0][1])+(Matrix[0](i,state)*mu[0][2]));
+        double w_statei = Matrix[0](i,i) - Matrix[0](state,state); 
 
-        R = R + (( pow(dipole_mat_element, 2) * w_statei ) / ( pow(w_statei-wx, 2) + pow((auger_i[i] + photo_i[i])/ 2, 2) ) );    
+        R = R + (( pow(dipole_mat, 2) * w_statei ) / ( pow(w_statei-wx[0], 2) + pow((auger_i[i] + photo_i[i])/ 2, 2) ) );    
         
     }
 
-    R = R * ( ( pow(Et, 2) * gamma_state ) / 4);   
+    R = R * ( ( pow(Et[0], 2) * gamma_state ) / 4);   
 
     return R;
 }
 
-
+void EOMDRIVER::Dipole_Matrix_Element(double & dipole_mat, vector<double> mu, int i, int j)
+{
+	dipole_mat=(Matrix[0](i,j)*mu[0])+(Matrix[1](i,j)*mu[1])+(Matrix[2](i,j)*mu[2]);	
+}
 

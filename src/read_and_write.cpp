@@ -7,7 +7,6 @@
 #include "vectypedef.hpp"
 #include "read_and_write.h"
 
-
 bool read_bool_options(string option) {
 
     bool result = false;
@@ -40,7 +39,6 @@ bool read_bool_options(string option) {
         }   
         i++; 
     }     
-
     return result;
 }    
 
@@ -149,21 +147,23 @@ void pair_sum(int nt, int n_type, int n_decay_chan, vector<vec1x >& pt_vec_, vec
 }
 
 FILEWRITER::FILEWRITER(void){
+
+	//no contructors
 }
 
-void FILEWRITER::write_data_files(string outfilename, vector<vec1x> pt_vec, vector<vec1x> pt_sum_vec, vector<vec1x>& pt_vec_perp, vector<vec1x>& pt_sum_vec_perp, vector<double> norm_t_vec_avg, vector<double>& norm_t_vec_avg_perp, bool SUM, bool PERP_AVG) {
+void FILEWRITER::write_data_files(string outfilename, vector<vec1x> pt_vec, vector<vec1x> pt_sum_vec, vector<vec1x>& pt_vec_perp, vector<vec1x>& pt_sum_vec_perp, vector<double> norm_t_vec_avg, vector<double>& norm_t_vec_avg_perp) {
    
-    if (SUM) {
+    if (BOOL_VEC[7]) {
         string gnufilepath = "outputs/gnu/sum/"+outfilename;        
         string outfilepath = "outputs/out/sum/"+outfilename;        
         write_data(gnufilepath+".txt", n_sum_type, pt_sum_vec, norm_t_vec_avg, true);
         write_data(outfilepath+".txt", n_sum_type, pt_sum_vec, norm_t_vec_avg, false);
-        if(PERP_AVG) {
+        if (BOOL_VEC[6]) {
             write_data(gnufilepath+"_x.txt", n_sum_type, pt_sum_vec, norm_t_vec_avg, true);
             write_data(outfilepath+"_x.txt", n_sum_type, pt_sum_vec, norm_t_vec_avg, false);
             write_data(gnufilepath+"_y.txt", n_sum_type, pt_sum_vec_perp, norm_t_vec_avg_perp, true);
             write_data(outfilepath+"_y.txt", n_sum_type, pt_sum_vec_perp, norm_t_vec_avg_perp, false);
-            for(int i = 0; i<nt; i++) {
+            for (int i = 0; i<nt; i++) {
                 for (int j = 0; j<n_sum_type; j++) {
                   pt_sum_vec_perp[j][i] = (pt_sum_vec_perp[j][i] + pt_sum_vec[j][i]) / 2.0; 
                 }
@@ -177,12 +177,12 @@ void FILEWRITER::write_data_files(string outfilename, vector<vec1x> pt_vec, vect
     string outfilepath = "outputs/out/"+outfilename;        
     write_data(gnufilepath+".txt", n_type, pt_vec, norm_t_vec_avg, true);
     write_data(outfilepath+".txt", n_type, pt_vec, norm_t_vec_avg, false);
-    if(PERP_AVG) {
+    if (BOOL_VEC[6]) {
         write_data(gnufilepath+"_x.txt", n_type, pt_vec, norm_t_vec_avg, true);
         write_data(outfilepath+"_x.txt", n_type, pt_vec, norm_t_vec_avg, false);
         write_data(gnufilepath+"_y.txt", n_type, pt_vec_perp, norm_t_vec_avg_perp, true);
         write_data(outfilepath+"_y.txt", n_type, pt_vec_perp, norm_t_vec_avg_perp, false);
-        for(int i = 0; i<nt; i++) {
+        for (int i = 0; i<nt; i++) {
             for (int j = 0; j<n_type; j++) {
                  pt_vec_perp[j][i] = (pt_vec_perp[j][i] + pt_vec[j][i]) / 2.0;
             }
@@ -194,59 +194,39 @@ void FILEWRITER::write_data_files(string outfilename, vector<vec1x> pt_vec, vect
 }
 
 
-void FILEWRITER::write_data_variable_files(int n_photon_e, int n_calc, vector<double> intensity, vector<double> wx, vector<vector<vec1x> > pt_vec, vector<vector<vec1x> > pt_sum_vec, vector<vector<vec1x> > pt_vec_perp, vector<vector<vec1x> > pt_sum_vec_perp, bool SUM, bool ECALC, bool PERP_AVG) {
+void FILEWRITER::write_data_variable_files(vector<vector<vec1x> > pt_vec, vector<vector<vec1x> > pt_sum_vec, vector<vector<vec1x> > pt_vec_perp, vector<vector<vec1x> > pt_sum_vec_perp) {
 
-//convert energy to ev for printing
-for(int i = 0; i < n_photon_e; i++) wx[i] *=  27.2114;
+if (varstring == "energy") { //convert energy to ev for printing
+	for (int i = 0; i < n_photon_e; i++) variable[i] *=  27.2114;
+}
     
     string gnufilepath = "outputs/gnu/sum/variable/";
     string outfilepath = "outputs/out/sum/variable/";
     cout << "Writing energy/intensity variable data at t_final\n" << endl;
-    if(SUM and ECALC) {
-        write_data_variable(gnufilepath+"photon_energy.txt", n_calc, n_sum_type, wx, pt_sum_vec, true); 
-        write_data_variable(outfilepath+"photon_energy.txt", n_calc, n_sum_type, wx, pt_sum_vec, false); 
-    }
-    if(SUM and !ECALC) {
-        write_data_variable(gnufilepath+"pulse_intensity.txt", n_calc, n_sum_type, intensity, pt_sum_vec, true); 
-        write_data_variable(outfilepath+"pulse_intensity.txt", n_calc, n_sum_type, intensity, pt_sum_vec, false); 
+    if (BOOL_VEC[7]) {
+        write_data_variable(gnufilepath+""+varstring+".txt", n_sum_type, pt_sum_vec, true); 
+        write_data_variable(outfilepath+""+varstring+".txt", n_sum_type, pt_sum_vec, false); 
     }
     gnufilepath = "outputs/gnu/variable/";
     outfilepath = "outputs/out/variable/";
-    if(ECALC) {
-        write_data_variable(gnufilepath+"photon_energy.txt", n_calc, n_type, wx, pt_vec, true); 
-        write_data_variable(outfilepath+"photon_energy.txt", n_calc, n_type, wx, pt_vec, false); 
-    }
-    if(!ECALC) {
-        write_data_variable(gnufilepath+"pulse_intensity.txt", n_calc, n_type, intensity, pt_vec, true); 
-        write_data_variable(outfilepath+"pulse_intensity.txt", n_calc, n_type, intensity, pt_vec, false); 
-    }
+	write_data_variable(gnufilepath+""+varstring+".txt", n_type, pt_vec, true); 
+	write_data_variable(outfilepath+""+varstring+".txt", n_type, pt_vec, false);
+
     gnufilepath = "outputs/gnu/sum/variable/";
     outfilepath = "outputs/out/sum/variable/";
-    if(PERP_AVG) { //only averaged reuslt printed
-        if(SUM and ECALC) {
-            write_data_variable(gnufilepath+"photon_energy_perp.txt", n_calc, n_sum_type, wx, pt_sum_vec_perp, true);
-            write_data_variable(outfilepath+"photon_energy_perp.txt", n_calc, n_sum_type, wx, pt_sum_vec_perp, false);
-        }
-        if(SUM and !ECALC) {
-            write_data_variable(gnufilepath+"pulse_intensity_perp.txt", n_calc, n_sum_type, intensity, pt_sum_vec_perp, true); 
-            write_data_variable(outfilepath+"pulse_intensity_perp.txt", n_calc, n_sum_type, intensity, pt_sum_vec_perp, false); 
+    if (BOOL_VEC[6]) { //only averaged reuslt printed
+        if (BOOL_VEC[7]) {
+            write_data_variable(gnufilepath+""+varstring+"_perp.txt", n_sum_type, pt_sum_vec_perp, true); 
+            write_data_variable(outfilepath+""+varstring+"_perp.txt", n_sum_type, pt_sum_vec_perp, false); 
         }
         gnufilepath = "outputs/gnu/variable/";
         outfilepath = "outputs/out/variable/";
-        if(ECALC) {
-            write_data_variable(gnufilepath+"photon_energy_perp.txt", n_calc, n_type, wx, pt_vec_perp, true); 
-            write_data_variable(outfilepath+"photon_energy_perp.txt", n_calc, n_type, wx, pt_vec_perp, false); 
-        }
-        if(!ECALC) {
-            write_data_variable(gnufilepath+"pulse_intensity_perp.txt", n_calc, n_type, intensity, pt_vec_perp, true); 
-            write_data_variable(outfilepath+"pulse_intensity_perp.txt", n_calc, n_type, intensity, pt_vec_perp, false); 
-        }
+		write_data_variable(gnufilepath+""+varstring+"_perp.txt", n_type, pt_vec_perp, true); 
+		write_data_variable(outfilepath+""+varstring+"_perp.txt", n_type, pt_vec_perp, false); 
     }
-
-
 }    
 
-void FILEWRITER::write_data(string outfilename, int neqn, vector<vec1x > pt_vec, vector<double> norm_t_vec, bool GNUPLOT_OUT) {
+void FILEWRITER::write_data(string outfilename, int ncol, vector<vec1x > pt_vec, vector<double> norm_t_vec, bool GNUPLOT_OUT) {
     
     //Write data to files
     std::streambuf *coutbuf = std::cout.rdbuf();; //save old buf
@@ -256,12 +236,12 @@ void FILEWRITER::write_data(string outfilename, int neqn, vector<vec1x > pt_vec,
     if (!GNUPLOT_OUT) {
         for(int i = 0; i<nt; i++) {
             if (i % n_print == 0) cout<< tf_vec[i] <<" ";
-            for (int j = 0; j<neqn; j++) if (i % n_print == 0) cout << pt_vec[j][i].real() <<" ";
+            for (int j = 0; j<ncol; j++) if (i % n_print == 0) cout << pt_vec[j][i].real() <<" ";
             if (i % n_print == 0) cout<< norm_t_vec[i] <<"\n";
         }
     }
     if (GNUPLOT_OUT) {
-        for (int j = 0; j<neqn; j++) {
+        for (int j = 0; j<ncol; j++) {
             for(int i = 0; i<nt; i++) if (i % n_print == 0) cout << tf_vec[i] <<" " << pt_vec[j][i].real() <<"\n ";
             cout << "\n " << "\n ";
         }
@@ -274,7 +254,7 @@ void FILEWRITER::write_data(string outfilename, int neqn, vector<vec1x > pt_vec,
     return;
 }
 
-void FILEWRITER::write_data_variable(string outfilename, int n_calc, int neqn, vector<double> variable, vector<vector<vec1x > > pt_vec, bool GNUPLOT_OUT) {
+void FILEWRITER::write_data_variable(string outfilename, int ncol, vector<vector<vec1x > > pt_vec, bool GNUPLOT_OUT) {
 
     //only works on avaraged over the orientation data
     std::streambuf *coutbuf = std::cout.rdbuf();; //save old buf
@@ -284,12 +264,12 @@ void FILEWRITER::write_data_variable(string outfilename, int n_calc, int neqn, v
     if (!GNUPLOT_OUT) {
         for(int i = 0; i<n_calc; i++) {
             cout<< variable[i] <<" ";
-            for (int j = 0; j<neqn; j++) cout << pt_vec[i][j][nt-1].real() <<" ";
+            for (int j = 0; j<ncol; j++) cout << pt_vec[i][j][nt-1].real() <<" ";
             cout <<"\n";
         }
     }      
     if (GNUPLOT_OUT) {           
-        for (int j = 0; j<neqn; j++) {
+        for (int j = 0; j<ncol; j++) {
             for(int i = 0; i<n_calc; i++) cout << variable[i] <<" " << pt_vec[i][j][nt-1].real() <<"\n ";
             cout << "\n " << "\n ";
         }

@@ -1,10 +1,3 @@
-//
-//  rk4.hpp
-//  
-//
-// 
-//
-
 #ifndef rk4_hpp
 #define rk4_hpp
 
@@ -24,13 +17,31 @@ using namespace std;
 //typedef vector<complexd>                        vec1x;
 //typedef vector<vec1x>                           vec2x;
 
-void rk4(int neqn, vec1x & y, double t0, double tf, vector<arma::mat> Matrix, vector<vector<double> >
-polarization, vector<double> Et, vector<double> wx, vector<vector<vector<double> > > decay_widths, vector<string>
-decay_channels, bool RWA, bool DECAY, bool TWOPULSE, bool STARK, bool DECAY_AMP);
+class EOMDRIVER {
 
-void REQ(double t, int neqn, vec1x y, vec1x & dydt, vector<arma::mat> Matrix, vector<vector<double> >
-polarization, vector<double> Et, vector<double> wx, vector<vector<vector<double> > > decay_widths, vector<string>
-decay_channels, bool RWA, bool DECAY, bool TWOPULSE, bool STARK, bool DECAY_AMP);
+public:
 
-double Stark_Shift(int state, double Et, double gamma_state, vector<double> auger_i, vector<double> photo_i, int n, double wx, arma::mat Matrix, vector<double> polarization);
+EOMDRIVER(void);
+
+	int neqn;
+	vector<arma::mat> Matrix;
+	vector<vector<double> > mu;
+	vector<double> Et;
+	vector<double> wx;
+	vector<vector<vector<double> > > decay_widths;
+	vector<string> decay_channels;
+	vector<bool> BOOL_VEC;
+
+void RK4(vec1x & y, double t0, double tf);
+
+private:
+
+void REQ(double t, vec1x y, vec1x & dydt);
+
+double Stark_Shift(int state, vector<double> auger_i, vector<double> photo_i, int n);
+
+void Dipole_Matrix_Element(double & dipole_mat, vector<double> mu, int i, int j);
+
+};
+
 #endif /* rk4_hpp */
