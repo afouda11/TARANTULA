@@ -34,7 +34,7 @@ public:
     int n_sum_type;
     int n_print;
     vector<double> tf_vec;
-	vector<bool> BOOL_VEC;
+	vector<bool>* BOOL_VEC;
 	int n_photon_e;
 	int n_calc;
 	int neqn;

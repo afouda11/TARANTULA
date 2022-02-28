@@ -158,11 +158,52 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
   	const complex<double> I(0,1);
     vector<vector<double> > field (wx_.size(), vector<double> (nt, 0.0));
 
+	int n_decay_chan = static_cast<int>(decay_channels.size());
+	int n = neqn / (n_decay_chan+1);
+	//const complex<double> I(0,1);
+	vector<vector<double> > auger_gamma;
+	vector<vector<double> > photo_gamma;
+	vector<vector<double> > photo_sigma;
+	if (BOOL_VEC[2]) {
+		if(!BOOL_VEC[5]) {
+			auger_gamma = vector<vector<double> > (1, vector<double>(n, 0.0));
+			photo_sigma = vector<vector<double> > (1, vector<double>(n, 0.0));
+			photo_gamma = vector<vector<double> > (1, vector<double>(n, 0.0));
+			for(int i = 0; i < n; i++) {
+				//auger_gamma[0][i] = decay_widths[0][0][i] / 27.2114;
+				auger_gamma[0][i] = decay_widths[0][0][i];
+				photo_sigma[0][i] = decay_widths[0][1][i] / 28.0175; //convert megabarn to a.u.
+			}
+		}
+		if (BOOL_VEC[5]) {
+			auger_gamma = vector<vector<double> > (2, vector<double>(n, 0.0));
+			photo_sigma = vector<vector<double> > (2, vector<double>(n, 0.0));
+			photo_gamma = vector<vector<double> > (2, vector<double>(n, 0.0));
+			for(int i = 0; i < n; i++) {
+
+				auger_gamma[0][i] = decay_widths[0][0][i] / 27.2114;
+				auger_gamma[1][i] = decay_widths[1][0][i] / 27.2114;
+				photo_sigma[0][i] = decay_widths[0][1][i] / 28.0175;
+				photo_sigma[1][i] = decay_widths[1][1][i] / 28.0175;
+			}
+		}
+	}
+	if (!BOOL_VEC[2]) {
+		if(!BOOL_VEC[5]) {
+			auger_gamma = vector<vector<double> > (1, vector<double>(n, 0.0));
+			photo_sigma = vector<vector<double> > (1, vector<double>(n, 0.0));
+		}
+		if(BOOL_VEC[5]) {
+			auger_gamma = vector<vector<double> > (2, vector<double>(n, 0.0));
+			photo_sigma = vector<vector<double> > (2, vector<double>(n, 0.0));
+		}
+	}
+
 	EOMDRIVER DRIVEEOM;
-	DRIVEEOM.neqn = neqn;
+	DRIVEEOM.n = n;
 	DRIVEEOM.Matrix = Matrix;
 	DRIVEEOM.mu = mu;
-	DRIVEEOM.decay_widths = decay_widths;
+	DRIVEEOM.auger_gamma = auger_gamma;
 	DRIVEEOM.decay_channels = decay_channels;
 	DRIVEEOM.BOOL_VEC = BOOL_VEC;
 
@@ -180,7 +221,7 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 			    double tf = t0 + dt;
                 
 			    vector<double> Et;
-                if (!BOOL_VEC[5]) {
+                if (!BOOL_VEC[5]) {//ONE PULSE
                     Et = vector<double>(1);
                     if (BOOL_VEC[1]) {
                         Et[0] = gaussian_field(tf, tmax[0], field_strength_[0][a] * gw_[b], var[0]);
@@ -189,42 +230,81 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
                         Et[0] = field_strength_[0][a] * gw_[b];
                     }      
                 }
-                if (BOOL_VEC[5]) {
+                if (BOOL_VEC[5]) {//TWO PULSE
                     Et = vector<double>(2);
-                    if (BOOL_VEC[1]) {
+                    if (BOOL_VEC[1]) {//GAUSS
                         Et[0] = gaussian_field(tf, tmax[0], field_strength_[0][a] * gw_[b], var[0]);
                         Et[1] = gaussian_field(tf, tmax[1], field_strength_[1][a] * gw_[b], var[1]);
                     }
-                    if (!BOOL_VEC[1]) {
+                    if (!BOOL_VEC[1]) {//NO GAUSS 
                         Et[0] = field_strength_[0][a] * gw_[b];
                         Et[1] = field_strength_[1][a] * gw_[b];
                     }
                 }
-                if (BOOL_VEC[4]) {
+                if (BOOL_VEC[4]) {//BANDWIDTH AVERAGE
                     wx_[0] = wn_[b];
                 }
 				DRIVEEOM.Et = Et;
 				DRIVEEOM.wx = wx_;
 
+				if (BOOL_VEC[2]) {//DECAY WIDTHS
+					if(!BOOL_VEC[5]) {//ONE PULSE
+						for(int i = 0; i < n; i++) {
+							photo_gamma[0][i] = (photo_sigma[0][i] / wx_[0]) * pow(Et[0],2);
+						}
+					}
+					if (BOOL_VEC[5]) {//TWO PULSE
+						for(int i = 0; i < n; i++) {
+							photo_gamma[0][i] = (photo_sigma[0][i] / wx_[0]) * pow(Et[0],2);
+							photo_gamma[1][i] = (photo_sigma[1][i] / wx_[1]) * pow(Et[1],2);
+						}
+					}
+				}
+				if (!BOOL_VEC[2]) {//NO DECAY WIDTHS
+					if(!BOOL_VEC[5]) {//ONE PULSE
+						photo_gamma = vector<vector<double> > (1, vector<double>(n, 0.0));
+					}
+					if(BOOL_VEC[5]) {//TWO PULSE
+						photo_gamma = vector<vector<double> > (2, vector<double>(n, 0.0));
+					}
+				}
+				DRIVEEOM.photo_gamma = photo_gamma;
 			    DRIVEEOM.RK4(y, t0, tf);
-               
+              	 
                 if(ei == 0 and a == 0 and b == 0) {
                     for(int n = 0; n < static_cast<int>(field.size()); n++) {
-                        if(!BOOL_VEC[0]) {
+                        if(!BOOL_VEC[0]) {//NO RWA
                             field[n][i] = Et[n] * cos(wx_[n] * tf);
 
                             }           
                         }
                 }
                      
-		        tf_vec[i] = tf * 0.0241;
+		        //tf_vec[i] = tf * 0.0241;
+		        tf_vec[i] = tf;
 
 			    norm_t[i]  = 0.0;
-		
+				/*	
     		    for (int j = 0; j<neqn; j++) {                        
 				    pt[j][i]    = std::norm(y[j]);
 				    norm_t[i]  += pt[j][i].real();
 
+			    }*/
+    		    for (int j = 0; j<n; j++) {                        
+				    pt[j][i]    = std::norm(y[j]);
+			    }
+				if (BOOL_VEC[13]) {//POPULATION LOSS CHANNELS
+					for(int k = 0; k < n_decay_chan; k++) {
+						for (int j = (n * (k+1)); j < n * (k+2); j++) {
+
+							//pt[j][i] = DRIVEEOM.Analytical_Population_Loss(tf, j, k);
+							pt[j][i] = DRIVEEOM.Numerical_Population_Loss(i, j, k, tf_vec[i]-tf_vec[i-1], pt[j-(n*(k+1))]);
+
+						}
+					}
+				}
+    		    for (int j = 0; j<neqn; j++) {                        
+				    norm_t[i]  += pt[j][i].real();
 			    }
   
     		    for (int j = 0; j<neqn; j++) pt_vec[a][b][j][i] = pt[j][i];
@@ -256,7 +336,7 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 
         norm_t_vec_avg[i] /= (shell_sample * band_sample);
     }
-    if (BOOL_VEC[11]) {
+    if (BOOL_VEC[11]) {//WRITW FIELD
         if(ei == 0) {
             for(int n = 0; n < static_cast<int>(field.size()); n++) {
                 write_field("outputs/gnu/pulse_"+convertInt(n)+".txt", nt, 100, tf_vec, field[n]);

@@ -26,7 +26,8 @@ int main()
     cout << "\n\n*!*!*!*!*!*!*!* TDSE(RK4) Solver for XFEL experiments *!*!*!*!*!*!*!*\n\n" << endl;
 
 	//Read in bool options
-    vector<bool> BOOL_VEC(16);
+    //vector<bool> BOOL_VEC(16);
+    vector<bool> * BOOL_VEC = new vector<bool>(16);
     BOOL_VEC[0]  = read_bool_options("RWA");
     BOOL_VEC[1]  = read_bool_options("GAUSS");
     BOOL_VEC[2]  = read_bool_options("DECAY");
@@ -102,7 +103,12 @@ int main()
     double tstart;
     file2vector("inputs/time_info.txt", time_info);
     if (time_info[0] == 0.0) {
-        tstart = tmax[0] - (6 * var[0]); //by default pulse 1 arrives before pulse 2
+		if (BOOL_VEC[1]) {
+        	tstart = tmax[0] - (6 * var[0]); //by default pulse 1 arrives before pulse 2
+		}
+		if (!BOOL_VEC[1]) {
+        	tstart = 0.0;
+		}
     }
     else {
         tstart = time_info[0] * 41.34137;
@@ -339,7 +345,9 @@ int main()
     //for group_sum, if SUM=true
     vector<vector<vec1x > > pt_sum_vec(n_calc, vector<vec1x > (n_sum_type, vec1x (nt, complexd(0.0,0.0))));
     vector<vector<vec1x > > pt_sum_vec_perp(n_calc, vector<vec1x > (n_sum_type, vec1x (nt, complexd(0.0,0.0))));
-	
+
+	//vector<bool> *BOOLS;
+	//BOOLS = &BOOL_VEC;
 	//WRITE SUMMED data to files 
 	FILEWRITER WRITEFILES;	
 	WRITEFILES.nt = nt;
