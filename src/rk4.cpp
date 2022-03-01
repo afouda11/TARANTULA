@@ -233,20 +233,36 @@ double EOMDRIVER::Numerical_Population_Loss(int i, int j, int k, double dt, vec1
 	dum *= (dt/2.0);*/
 
 	//Simpson 1/3 Rule
-	for (int step = 0; step <= i; step++) {
-		if (step == 0 || step == i) {
-			dum += pt[step].real();
+	if (decay_channels[k] == "AUGER" ) {
+		for (int step = 0; step <= i; step++) {
+			if (step == 0 || step == i) {
+				dum += pt[step].real();
+			}
+			else if (step % 2 != 0) {	
+				dum += (4 * pt[step].real());
+			}
+			else {
+				dum += (2 * pt[step].real());
+			}
 		}
-		else if (step % 2 != 0) {	
-			dum += (4 * pt[step].real());
-		}
-		else {
-			dum += (2 * pt[step].real());
-		}
+		dum *= (dt /3);
+		dum *= auger_gamma[0][j-(n*(k+1))];	
 	}
-	dum *= (dt /3);
-	dum *= auger_gamma[0][j-(n*(k+1))];	
-
+	if (decay_channels[k] == "PHOTO_TOTAL" ) {
+		for (int step = 0; step <= i; step++) {
+			if (step == 0 || step == i) {
+				dum += (pt[step].real() * photo_gamma_vec[0][j-(n*(k+1))][step]);
+			}
+			else if (step % 2 != 0) {	
+				dum += (4 * pt[step].real() * photo_gamma_vec[0][j-(n*(k+1))][step]);
+			}
+			else {
+				dum += (2 * pt[step].real() * photo_gamma_vec[0][j-(n*(k+1))][step]);
+			}
+		}
+		dum *= (dt /3);
+	}
+	
 	return dum;
 
 }

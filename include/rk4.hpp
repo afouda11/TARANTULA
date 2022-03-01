@@ -30,8 +30,9 @@ EOMDRIVER(void);
 	vector<double> wx;
 	vector<vector<double> > auger_gamma;
 	vector<vector<double> > photo_gamma;
+	vector<vector<vector<double> > > photo_gamma_vec;
 	vector<string> decay_channels;
-	vector<bool>* BOOL_VEC;
+	vector<bool> BOOL_VEC;
 
 void RK4(vec1x & y, double t0, double tf);
 

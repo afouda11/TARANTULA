@@ -26,8 +26,8 @@ int main()
     cout << "\n\n*!*!*!*!*!*!*!* TDSE(RK4) Solver for XFEL experiments *!*!*!*!*!*!*!*\n\n" << endl;
 
 	//Read in bool options
-    //vector<bool> BOOL_VEC(16);
-    vector<bool> * BOOL_VEC = new vector<bool>(16);
+    vector<bool> BOOL_VEC(16);
+    //vector<bool> * BOOL_VEC = new vector<bool>(16);
     BOOL_VEC[0]  = read_bool_options("RWA");
     BOOL_VEC[1]  = read_bool_options("GAUSS");
     BOOL_VEC[2]  = read_bool_options("DECAY");

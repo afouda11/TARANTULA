@@ -162,13 +162,15 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 	int n = neqn / (n_decay_chan+1);
 	//const complex<double> I(0,1);
 	vector<vector<double> > auger_gamma;
-	vector<vector<double> > photo_gamma;
 	vector<vector<double> > photo_sigma;
+	//vector<vector<double> > photo_sigma;
+	vector<vector<vector<double> > > photo_gamma;
 	if (BOOL_VEC[2]) {
 		if(!BOOL_VEC[5]) {
 			auger_gamma = vector<vector<double> > (1, vector<double>(n, 0.0));
 			photo_sigma = vector<vector<double> > (1, vector<double>(n, 0.0));
-			photo_gamma = vector<vector<double> > (1, vector<double>(n, 0.0));
+			//photo_gamma = vector<vector<double> > (1, vector<double>(n, 0.0));
+			photo_gamma = vector<vector<vector<double> > > (1, vector<vector<double> >(n, vector<double>(nt, 0.0)));
 			for(int i = 0; i < n; i++) {
 				//auger_gamma[0][i] = decay_widths[0][0][i] / 27.2114;
 				auger_gamma[0][i] = decay_widths[0][0][i];
@@ -178,9 +180,9 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 		if (BOOL_VEC[5]) {
 			auger_gamma = vector<vector<double> > (2, vector<double>(n, 0.0));
 			photo_sigma = vector<vector<double> > (2, vector<double>(n, 0.0));
-			photo_gamma = vector<vector<double> > (2, vector<double>(n, 0.0));
+			//photo_gamma = vector<vector<double> > (2, vector<double>(n, 0.0));
+			photo_gamma = vector<vector<vector<double> > > (2, vector<vector<double> >(n, vector<double>(nt, 0.0)));
 			for(int i = 0; i < n; i++) {
-
 				auger_gamma[0][i] = decay_widths[0][0][i] / 27.2114;
 				auger_gamma[1][i] = decay_widths[1][0][i] / 27.2114;
 				photo_sigma[0][i] = decay_widths[0][1][i] / 28.0175;
@@ -204,6 +206,12 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 	DRIVEEOM.Matrix = Matrix;
 	DRIVEEOM.mu = mu;
 	DRIVEEOM.auger_gamma = auger_gamma;
+	if (!BOOL_VEC[5]) {
+		DRIVEEOM.photo_gamma = vector<vector<double> > (1, vector<double>(n, 0.0));
+	}
+	if (BOOL_VEC[5]) {
+		DRIVEEOM.photo_gamma = vector<vector<double> > (2, vector<double>(n, 0.0));
+	}
 	DRIVEEOM.decay_channels = decay_channels;
 	DRIVEEOM.BOOL_VEC = BOOL_VEC;
 
@@ -249,35 +257,39 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 
 				if (BOOL_VEC[2]) {//DECAY WIDTHS
 					if(!BOOL_VEC[5]) {//ONE PULSE
-						for(int i = 0; i < n; i++) {
-							photo_gamma[0][i] = (photo_sigma[0][i] / wx_[0]) * pow(Et[0],2);
+						for(int states = 0; states < n; states++) {
+							photo_gamma[0][states][i] = (photo_sigma[0][states] / wx_[0]) * pow(Et[0],2);
 						}
 					}
 					if (BOOL_VEC[5]) {//TWO PULSE
-						for(int i = 0; i < n; i++) {
-							photo_gamma[0][i] = (photo_sigma[0][i] / wx_[0]) * pow(Et[0],2);
-							photo_gamma[1][i] = (photo_sigma[1][i] / wx_[1]) * pow(Et[1],2);
+						for(int states = 0; states < n; states++) {
+							photo_gamma[0][states][i] = (photo_sigma[0][states] / wx_[0]) * pow(Et[0],2);
+							photo_gamma[1][states][i] = (photo_sigma[1][states] / wx_[1]) * pow(Et[1],2);
 						}
 					}
 				}
-				if (!BOOL_VEC[2]) {//NO DECAY WIDTHS
+	/*			if (!BOOL_VEC[2]) {//NO DECAY WIDTHS
 					if(!BOOL_VEC[5]) {//ONE PULSE
 						photo_gamma = vector<vector<double> > (1, vector<double>(n, 0.0));
 					}
 					if(BOOL_VEC[5]) {//TWO PULSE
 						photo_gamma = vector<vector<double> > (2, vector<double>(n, 0.0));
 					}
+				}*/
+				for(int pulses = 0; pulses < static_cast<int>(field.size()); pulses++) {
+					for(int states = 0; states < n; states++) {
+						DRIVEEOM.photo_gamma[pulses][states] = photo_gamma[pulses][states][i];
+              		}
 				}
-				DRIVEEOM.photo_gamma = photo_gamma;
-			    DRIVEEOM.RK4(y, t0, tf);
-              	 
-                if(ei == 0 and a == 0 and b == 0) {
-                    for(int n = 0; n < static_cast<int>(field.size()); n++) {
-                        if(!BOOL_VEC[0]) {//NO RWA
-                            field[n][i] = Et[n] * cos(wx_[n] * tf);
+				DRIVEEOM.photo_gamma_vec = photo_gamma;
+				DRIVEEOM.RK4(y, t0, tf);
 
-                            }           
-                        }
+                if(ei == 0 and a == 0 and b == 0) {
+                    for(int pulses = 0; pulses < static_cast<int>(field.size()); pulses++) {
+                        if(!BOOL_VEC[0]) {//NO RWA
+                            field[pulses][i] = Et[pulses] * cos(wx_[pulses] * tf);
+						}           
+					}
                 }
                      
 		        //tf_vec[i] = tf * 0.0241;

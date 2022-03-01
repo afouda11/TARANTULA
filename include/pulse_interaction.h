@@ -23,7 +23,7 @@ TDSEUTILITY(void);
 	vector<vector<double> > mu;
 	vector<vector<vector<double> > > decay_widths;
 	vector<string> decay_channels;
-	vector<bool>* BOOL_VEC;
+	vector<bool> BOOL_VEC;
 
 
 double icalib(vector<arma::mat> Matrix, vector<vector<double> > mu, std::vector<vector<double> > ww, double spot_size, vector<double> var);
