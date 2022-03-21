@@ -154,34 +154,28 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 
     vector<vector<vector<double> > > norm_t_vec(shell_sample, vector<vector<double> >(band_sample, vector<double>(nt, 0.0)));
     
-    vector<double> norm_t  (nt, 0.0);
   	const complex<double> I(0,1);
     vector<vector<double> > field (wx_.size(), vector<double> (nt, 0.0));
 
 	int n_decay_chan = static_cast<int>(decay_channels.size());
 	int n = neqn / (n_decay_chan+1);
-	//const complex<double> I(0,1);
 	vector<vector<double> > auger_gamma;
 	vector<vector<double> > photo_sigma;
-	//vector<vector<double> > photo_sigma;
-	vector<vector<vector<double> > > photo_gamma;
+	vector<vector<double> > photo_gamma;
 	if (BOOL_VEC[2]) {
 		if(!BOOL_VEC[5]) {
 			auger_gamma = vector<vector<double> > (1, vector<double>(n, 0.0));
 			photo_sigma = vector<vector<double> > (1, vector<double>(n, 0.0));
-			//photo_gamma = vector<vector<double> > (1, vector<double>(n, 0.0));
-			photo_gamma = vector<vector<vector<double> > > (1, vector<vector<double> >(n, vector<double>(nt, 0.0)));
+			photo_gamma = vector<vector<double> > (1, vector<double>(n, 0.0));
 			for(int i = 0; i < n; i++) {
 				auger_gamma[0][i] = decay_widths[0][0][i] / 27.2114;
-				auger_gamma[0][i] = decay_widths[0][0][i];
 				photo_sigma[0][i] = decay_widths[0][1][i] / 28.0175; //convert megabarn to a.u.
 			}
 		}
 		if (BOOL_VEC[5]) {
 			auger_gamma = vector<vector<double> > (2, vector<double>(n, 0.0));
 			photo_sigma = vector<vector<double> > (2, vector<double>(n, 0.0));
-			//photo_gamma = vector<vector<double> > (2, vector<double>(n, 0.0));
-			photo_gamma = vector<vector<vector<double> > > (2, vector<vector<double> >(n, vector<double>(nt, 0.0)));
+			photo_gamma = vector<vector<double> > (2, vector<double>(n, 0.0));
 			for(int i = 0; i < n; i++) {
 				auger_gamma[0][i] = decay_widths[0][0][i] / 27.2114;
 				auger_gamma[1][i] = decay_widths[1][0][i] / 27.2114;
@@ -220,7 +214,6 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
     for(int a = 0; a < shell_sample; a++) {
         for(int b = 0; b < band_sample; b++) {
 
-            vector<vec1x > pt(neqn, vec1x (nt, complexd(0.0,0.0)));	
 		    vec1x y (neqn, complexd(0.0,0.0));	
     	    y[0] = 1.0; //initial condition - all in the G-state
 
@@ -230,20 +223,15 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 			    double tf = t0 + dt;
                 
 			    vector<double> Et;
-                if (!BOOL_VEC[5]) {//ONE PULSE
-                    Et = vector<double>(1);
-				}
-                if (BOOL_VEC[5]) {//TWO PULSE
-                    Et = vector<double>(2);
-				}
 				for(int pulses = 0; pulses < n_pulse; pulses++) {
+                    Et = vector<double>(n_pulse);
                     if (BOOL_VEC[1]) {//GAUSS
-                        Et[pulses] = gaussian_field(tf, tmax[pulses], field_strength_[pulses][a] * gw_[b], var[pulses]);
-                    }
-                    if (!BOOL_VEC[1]) {//NO GAUSS
+                    	Et[pulses] = gaussian_field(tf, tmax[pulses], field_strength_[pulses][a] * gw_[b], var[pulses]);
+					}
+                    if (!BOOL_VEC[1]) {//CONSTANT FIELD
                         Et[pulses] = field_strength_[pulses][a] * gw_[b];
-                    }      
-                }
+					}
+				}
                 if (BOOL_VEC[4]) {//BANDWIDTH AVERAGE
                     wx_[0] = wn_[b];
                 }
@@ -253,18 +241,12 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 				if (BOOL_VEC[2]) {//DECAY WIDTHS
 					for(int pulses = 0; pulses < n_pulse; pulses++) {
 						for(int states = 0; states < n; states++) {
-							photo_gamma[pulses][states][i] = (photo_sigma[pulses][states] / wx_[pulses]) * pow(Et[pulses],2);
-						}
-					}
-
-					for(int pulses = 0; pulses < n_pulse; pulses++) {
-						for(int states = 0; states < n; states++) {
-							DRIVEEOM.photo_gamma[pulses][states] = photo_gamma[pulses][states][i];
+							photo_gamma[pulses][states] = (photo_sigma[pulses][states] / wx_[pulses]) * pow(Et[pulses],2);
 						}
 					}
 				}
 
-				DRIVEEOM.photo_gamma_vec = photo_gamma;
+				DRIVEEOM.photo_gamma = photo_gamma;
 				DRIVEEOM.RK4(y, t0, tf);
 
                 if(ei == 0 and a == 0 and b == 0) {
@@ -282,34 +264,51 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 					tf_vec[i] = tf * 0.0241;
 				}
 
-			    norm_t[i]  = 0.0;
+			    norm_t_vec[a][b][i]  = 0.0;
 
     		    for (int j = 0; j<n; j++) {                        
-				    pt[j][i]    = std::norm(y[j]);
+				    pt_vec[a][b][j][i]    = std::norm(y[j]);
 			    }
-				if (BOOL_VEC[13]) {//POPULATION LOSS CHANNELS
 
+    		    for (int j = 0; j < n; j++) {                        
+				    norm_t_vec[a][b][i] += pt_vec[a][b][j][i].real();
+				}
+		    }
+		}
+	}
+	if (BOOL_VEC[13]) { //POPULATION LOSS CHANNELS
+    	cout << "Calculate population loss channel amplitudes" << endl;
+		for(int a = 0; a < shell_sample; a++) {
+			for(int b = 0; b < band_sample; b++) {
+				for(int i = 0; i<nt; i++) { 
+		        	double t0 = tstart + i*dt;
+			    	double tf = t0 + dt;
+			    	vector<double> Et;
+					for(int pulses = 0; pulses < n_pulse; pulses++) {
+						Et = vector<double>(n_pulse);
+						if (BOOL_VEC[1]) {//GAUSS
+							Et[pulses] = gaussian_field(tf, tmax[pulses], field_strength_[pulses][a] * gw_[b], var[pulses]);
+						}
+						if (!BOOL_VEC[1]) {//GAUSS
+							Et[pulses] = field_strength_[pulses][a] * gw_[b];
+						}
+						for(int states = 0; states < n; states++) {
+							photo_gamma[pulses][states] = (photo_sigma[pulses][states] / wx_[pulses]) * pow(Et[pulses],2);
+						}
+					}
+					DRIVEEOM.photo_gamma = photo_gamma;
 					for(int k = 0; k < n_decay_chan; k++) {
-    				#pragma omp parallel for
 						for (int j = (n * (k+1)); j < n * (k+2); j++) {
-							//pt[j][i] = DRIVEEOM.Analytical_Population_Loss(tf, j, k);
-							//pt[j][i] = DRIVEEOM.Numerical_Population_Loss(i, j, k, dt, pt[j-(n*(k+1))]);
-							DRIVEEOM.Numerical_Population_Loss(i, j, k, dt, nt, pt[j-(n*(k+1))], pt[j]);
-
+		    
+							DRIVEEOM.Numerical_Population_Loss(i, j, k, dt, nt, pt_vec[a][b][j-(n*(k+1))][i], pt_vec[a][b][j][i], pt_vec[a][b][j][i-1]);
+							norm_t_vec[a][b][i]  += pt_vec[a][b][j][i].real();
 						}
 					}
 				}
-    		    for (int j = 0; j<neqn; j++) {                        
-				    norm_t[i]  += pt[j][i].real();
-			    }
-  
-    		    for (int j = 0; j<neqn; j++) pt_vec[a][b][j][i] = pt[j][i];
-			    norm_t_vec[a][b][i] = norm_t[i];
-                        
-		    }
-        }
-    }
-          
+			}
+		}
+	}
+
     //sum the intensiites for avergaing over the focal volume    
     cout << "Sum populations from focal-voulme/bandwidth averaging" << endl;
     for(int i = 0; i<nt; i++) {
@@ -323,6 +322,7 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 
         }
     }
+			    vector<double> Et;
     for(int i = 0; i<nt; i++) {
         for (int a = 0; a < shell_sample; a++) {
             for (int b = 0; b < band_sample; b++) {

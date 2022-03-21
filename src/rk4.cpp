@@ -84,7 +84,6 @@ void EOMDRIVER::REQ(double t, vec1x y, vec1x & dydt){
                 dydt[j] = ( Matrix[0](j,j) - ( I * ( ((auger_gamma[0][j] + photo_gamma[0][j]) /2.0) + (I * R) ) ) ) * y[j];
             }
             else {
-                //dydt[j] = ( ( Matrix[0](j,j) ) - (( I * (auger_gamma[0][j] + photo_gamma[0][j]) )/2.0) ) * y[j];
                 dydt[j] = ( ( Matrix[0](j,j) ) - (( I * (auger_gamma[0][j] + photo_gamma[0][j]) )/2.0) ) * y[j];
             }     
 	        //OFF DIAGONAL
@@ -96,9 +95,6 @@ void EOMDRIVER::REQ(double t, vec1x y, vec1x & dydt){
 					    if (j > i ) {
 							sign = -1.0;
 						}
-					    /*if (j < i ) {
-							sign = 1.0;
-						}*/
 						if (BOOL_VEC[9] && !BOOL_VEC[1]) {//TWO STATE & NO GAUSS
 							dydt[j] += ((exp(sign * I * t)) * y[i]);
 						}
@@ -128,8 +124,6 @@ void EOMDRIVER::REQ(double t, vec1x y, vec1x & dydt){
 	            vector<double> dipole_mat(2);
 				Dipole_Matrix_Element(dipole_mat[0], mu[0], i, j);
 				Dipole_Matrix_Element(dipole_mat[1], mu[1], i, j);
-                //dipole_mat[0]=(Matrix[0](i,j)*mu[0][0])+(Matrix[1](i,j)*mu[0][1])+(Matrix[2](i,j)*mu[0][2]);
-                //dipole_mat[1]=(Matrix[0](i,j)*mu[1][0])+(Matrix[1](i,j)*mu[1][1])+(Matrix[2](i,j)*mu[1][2]); 
 			    if (BOOL_VEC[0]) { //RWA
 				    if (i != j) {
 					    if (j > i ) {
@@ -155,37 +149,6 @@ void EOMDRIVER::REQ(double t, vec1x y, vec1x & dydt){
 	        dydt[j] /= I;		
         }
     }
-  /*  if(BOOL_VEC[13] && !BOOL_VEC[5]) { //Decay amp and 1 pulse
-
-        for(int k = 0; k < n_decay_chan; k++) {
-
-        	for (int j = (n * (k+1)); j < n * (k+2); j++) {
-
-				dydt[j]  = 1.0 * y[j] * Matrix[0](j-(n*(k+1)),j-(n*(k+1)));
-
-				if (decay_channels[k] == "PHOTO_TOTAL" ) {
-					dydt[j] += (y[j-(n*(k+1))] * pow((photo_gamma[0][j-(n*(k+1))] / (2*M_PI)),4.0));
-					//dydt[j] += (y[j] * pow((photo_gamma[0][j-(n*(k+1))] / (2*M_PI)),0.5));
-				}
-				if (decay_channels[k] == "AUGER" ) {
-					dydt[j] += (y[j-(n*(k+1))] * pow((auger_gamma[0][j-(n*(k+1))] / (2)),1.0));
-					//dydt[j] += (y[j] * pow((auger_gamma[0][j-(n*(k+1))] / (2*M_PI)),0.5));
-				}
-
-            	for (int i = (n * (k+1)); i < n * (k+2); i++) {
-				    if (i != j) {
-						if (decay_channels[k] == "PHOTO_TOTAL" ) {
-							dydt[j] += (y[j-(n*(k+1))] * pow((photo_gamma[0][j-(n*(k+1))] / (2*M_PI)),0.5));
-						}
-						if (decay_channels[k] == "AUGER" ) {
-							dydt[j] += (y[j-(n*(k+1))] * pow((auger_gamma[0][j-(n*(k+1))] / (2*M_PI)),0.5));
-						}
-					}	
-				}
-                dydt[j] /= I;
-            }
-        }        
-    }*/
 
     return;
 
@@ -211,7 +174,7 @@ double EOMDRIVER::Analytical_Population_Loss(double tf, int j, int k)
 	return (1-((expterm*(-16+prod1+prod2))/beta));
 }
 
-void EOMDRIVER::Numerical_Population_Loss(int i, int j, int k, double dt, int nt, vec1x pt_state, vec1x & pt_loss)
+void EOMDRIVER::Numerical_Population_Loss(int i, int j, int k, double dt, int nt, complex<double> pt_state, complex<double> & pt_loss, complex<double> pt_loss_prev)
 {
 	double gamma = 0.0;
 	//Use Trapezoidal Rule
@@ -219,97 +182,22 @@ void EOMDRIVER::Numerical_Population_Loss(int i, int j, int k, double dt, int nt
 		gamma = auger_gamma[0][j-(n*(k+1))];
 	}
 	if (decay_channels[k] == "PHOTO_TOTAL" ) {
-		gamma =  photo_gamma_vec[0][j-(n*(k+1))][i]; 
+		gamma = photo_gamma[0][j-(n*(k+1))]; 
 	}
 
 	if (i == 0) {
-		pt_loss[i] = pt_state[i].real() * (dt/2.0) * gamma;
+		pt_loss = pt_state.real() * (dt/2.0) * gamma;
 	}
 	else if ( (0 < i) && (i < (nt-1))) {
-		pt_loss[i] = pt_loss[i-1] + (pt_state[i].real() * 2 * (dt/2.0) * gamma);
+		pt_loss = pt_loss_prev + (pt_state.real() * 2 * (dt/2.0) * gamma);
 	}
 	else if (i == (nt-1)) {
-		pt_loss[i] = pt_loss[i-1] + (pt_state[i].real() * (dt/2.0) * gamma);
+		pt_loss = pt_loss_prev + (pt_state.real() * (dt/2.0) * gamma);
 	}
-/*
-	if (decay_channels[k] == "PHOTO_TOTAL" ) {
-		if (i == 0) {
-			pt_loss[i] = pt_state[i].real() * (dt/2.0) * photo_gamma_vec[0][j-(n*(k+1))][i];
-		}
-		else if ( (0 < i) && (i < (nt-1))) {
-			pt_loss[i] = pt_loss[i-1] + (pt_state[i].real() * 2 * (dt/2.0) * photo_gamma_vec[0][j-(n*(k+1))][i]);
-		}
-		else if (i == (nt-1)) {
-			pt_loss[i] = pt_loss[i-1] + (pt_state[i].real() * (dt/2.0) * photo_gamma_vec[0][j-(n*(k+1))][i]);
-		}
-	}*/
 
 	return;
 
 }
-
-/*double EOMDRIVER::Numerical_Population_Loss(int i, int j, int k, double dt, vec1x pt)
-{
-	double dum = 0.0;
-	//Use Trapezoidal Rule
-	if (decay_channels[k] == "AUGER" ) {
-		for (int step = 0; step < i; step++) {
-			if (step == 0 || step == i) {
-				dum += pt[step].real();
-			}
-			else {
-				dum += (2.0 * pt[step].real());
-			}
-		}
-		dum *= (dt/2.0);
-		dum *= auger_gamma[0][j-(n*(k+1))];;
-	}
-	if (decay_channels[k] == "PHOTO_TOTAL" ) {
-		for (int step = 0; step < i; step++) {
-			if (step == 0 || step == i) {
-				dum += (pt[step].real() * photo_gamma_vec[0][j-(n*(k+1))][step]);
-			}
-			else {
-				dum += (2.0 * pt[step].real() * photo_gamma_vec[0][j-(n*(k+1))][step]);
-			}
-		}
-		dum *= (dt/2.0);
-	}
-
-	//Simpson 1/3 Rule
-	if (decay_channels[k] == "AUGER" ) {
-		for (int step = 0; step <= i; step++) {
-			if (step == 0 || step == i) {
-				dum += pt[step].real();
-			}
-			else if (step % 2 != 0) {	
-				dum += (4 * pt[step].real());
-			}
-			else {
-				dum += (2 * pt[step].real());
-			}
-		}
-		dum *= (dt /3);
-		dum *= auger_gamma[0][j-(n*(k+1))];	
-	}
-	if (decay_channels[k] == "PHOTO_TOTAL" ) {
-		for (int step = 0; step <= i; step++) {
-			if (step == 0 || step == i) {
-				dum += (pt[step].real() * photo_gamma_vec[0][j-(n*(k+1))][step]);
-			}
-			else if (step % 2 != 0) {	
-				dum += (4 * pt[step].real() * photo_gamma_vec[0][j-(n*(k+1))][step]);
-			}
-			else {
-				dum += (2 * pt[step].real() * photo_gamma_vec[0][j-(n*(k+1))][step]);
-			}
-		}
-		dum *= (dt /3);
-	}
-	
-	return dum;
-
-}*/
 
 double EOMDRIVER::Stark_Shift(int state, vector<double> auger_i, vector<double> photo_i, int n) 
 {

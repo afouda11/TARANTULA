@@ -133,7 +133,7 @@ int main()
     if (BOOL_VEC[9]) {
         neqn = 2;
         n_type = 2;
-		cout << "Two state system simulation often used to test new implementation" << endl;
+		cout << "Two state system simulation" << endl;
     }
 
 	//Read x, y and z direction matrices: see read_matrix.cpp   
@@ -229,7 +229,7 @@ int main()
 			cout << intensity[0][i] << endl;
 		}
 		if (BOOL_VEC[14]) {//INTENSITY CALIBRATION
-		cout << "Howver intensity to be determined from saturation fluence for a given pair of transitions" << endl;
+		cout << "Intensity calibrated from saturation fluence of selected transitions" << endl;
 			intensity[0][0] = UTILITYTDSE.icalib(Matrix, mu, wx, spot_size, var);
 		}
 
@@ -285,7 +285,7 @@ int main()
     if (BOOL_VEC[13]) {
         file2vector("inputs/decay_channels.txt", decay_channels);
         n_decay_chan = static_cast<int>(decay_channels.size());
-        cout << "Amplitudes for the following decay channles will be calculated\n" << endl;
+        cout << "Decay amplitude channles included in simulation:\n" << endl;
         for(int i = 0; i < n_decay_chan; i++) {
             cout << decay_channels[i] << endl;
         } 
@@ -303,7 +303,7 @@ int main()
     if ( n_intensity > 1 and n_photon_e == 1 ) {
         BOOL_VEC[15] = false;
         n_calc = n_intensity;
-        cout << "Calculation as a function of intensity (" << n_calc <<" intensity calculations)\n" << endl;
+        cout << "Simulation across " << n_calc <<" intensities\n" << endl;
     }
     else if ( n_photon_e >= 1 and n_intensity == 1 ) {
             if ( n_photon_e == 1 and n_intensity == 1 ) {
@@ -314,7 +314,7 @@ int main()
             else if (n_photon_e > 1) {
                 BOOL_VEC[15] = true;    
                 n_calc = n_photon_e; 
-                cout << "Calculation as a function of photon energy (" << n_calc <<" energy calculations)\n" << endl;
+                cout << "Simulation across " << n_calc <<" central photon energies\n" << endl;
             }
     }
 
