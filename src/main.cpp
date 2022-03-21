@@ -45,11 +45,11 @@ int main()
 	BOOL_VEC[14] = read_bool_options("ICALIB");
 
 	//Force correct two-state simulation parameters
-    if (BOOL_VEC[9]) {
-		BOOL_VEC[6]  = false;
-        BOOL_VEC[7]  = false;
-        BOOL_VEC[12] = false;
-		BOOL_VEC[14] = false;
+    if (BOOL_VEC[9]) {//TWO STATE
+		BOOL_VEC[6]  = false;//NO PERPENDICULAR AVERAGE
+        BOOL_VEC[7]  = false;//NO GROUP SUM
+        BOOL_VEC[12] = false;//NO PAIR SUM
+		BOOL_VEC[14] = false;//NO INTENSITY CALIBRATION
     }
 
 	//Read and process pulse information
@@ -58,7 +58,8 @@ int main()
     vector<double> tmax;
     vector<double> width;
     vector<double> spot;
-    if (!BOOL_VEC[5]) {
+	int n_pulse;
+    if (!BOOL_VEC[5]) {//ONE PULSE
         cout << "1 Pulse caclulcation.\n" << endl;
         vector<double> pulse1;
         file2vector("inputs/pulse_1.txt", pulse1);
@@ -71,8 +72,9 @@ int main()
         tmax[0]  = pulse1[1];
 		width[0] = pulse1[2];
 		spot[0]  = pulse1[3];
+		n_pulse = 1;
     }
-    if (BOOL_VEC[5]) {
+    if (BOOL_VEC[5]) {//TWO PULSE
         cout << "2 Pulse caclulcation. Currently only one intensity and energy can be used for each pulse," << endl;
         cout << "and no bandwidth or focal volume averaging effects can be applied at this current time.\n" << endl;
         vector<double> pulse1;
@@ -91,7 +93,8 @@ int main()
         width[0] = pulse1[2]; 
         width[1] = pulse2[2]; 
         spot[0]  = pulse1[3]; 
-        spot[1]  = pulse2[3]; 
+        spot[1]  = pulse2[3];
+		n_pulse = 2;
     }
     for (int i = 0; i < static_cast<int>(var.size()); i++) {
         var[i]  = (fwhm[i] * 41.34137) / (2 * pow(2 * log(2), 0.5));  //convert FWHM to sigma
@@ -103,10 +106,10 @@ int main()
     double tstart;
     file2vector("inputs/time_info.txt", time_info);
     if (time_info[0] == 0.0) {
-		if (BOOL_VEC[1]) {
+		if (BOOL_VEC[1]) {//GAUSSIAN PULSE
         	tstart = tmax[0] - (6 * var[0]); //by default pulse 1 arrives before pulse 2
 		}
-		if (!BOOL_VEC[1]) {
+		if (!BOOL_VEC[1]) {//CONSTANT FIELD
         	tstart = 0.0;
 		}
     }
@@ -135,28 +138,28 @@ int main()
 
 	//Read x, y and z direction matrices: see read_matrix.cpp   
     vector<arma::mat> Matrix (3); 
-	if (!BOOL_VEC[9]) {
+	if (!BOOL_VEC[9]) {//NO TWO STATE
 		Matrix[0]  = read_matrix(neqn, "matrix_elements/Diagonal.txt", "matrix_elements/Off_Diagonal_x.txt");
 		Matrix[1]  = read_matrix(neqn, "matrix_elements/Diagonal.txt", "matrix_elements/Off_Diagonal_y.txt");
 		Matrix[2]  = read_matrix(neqn, "matrix_elements/Diagonal.txt", "matrix_elements/Off_Diagonal_z.txt");
 	}
-	if (BOOL_VEC[9]) {
+	if (BOOL_VEC[9]) {//TWO STATE
 		Matrix[0]  = read_matrix(neqn, "matrix_elements/Diagonal_2STATE.txt", "matrix_elements/Off_Diagonal_x_2STATE.txt");
 		Matrix[1]  = read_matrix(neqn, "matrix_elements/Diagonal_2STATE.txt", "matrix_elements/Off_Diagonal_y_2STATE.txt");
 		Matrix[2]  = read_matrix(neqn, "matrix_elements/Diagonal_2STATE.txt", "matrix_elements/Off_Diagonal_z_2STATE.txt");
 	}
-    if (BOOL_VEC[8]) {
+    if (BOOL_VEC[8]) {//PRINT MATRIX
         cout << Matrix[0];
     }      
     cout << "Matrix elements read\n" << endl;
 
 	//Read light polarization vector
 	vector<vector<double> > mu;
-    if (!BOOL_VEC[5]) {
+    if (!BOOL_VEC[5]) {//ONE PULSE
         mu = vector<vector<double> >(1);
         file2vector("inputs/polarization_1.txt", mu[0]); 
     }
-    if (BOOL_VEC[5]) {
+    if (BOOL_VEC[5]) {//TWO PULSE
         mu = vector<vector<double> >(2);
         file2vector("inputs/polarization_1.txt", mu[0]); 
         file2vector("inputs/polarization_2.txt", mu[1]); 
@@ -170,7 +173,7 @@ int main()
     std::vector<vector<double> > wx;     
     int n_photon_e  = 1;
     int band_sample = 1;
-    if (!BOOL_VEC[5]) {
+    if (!BOOL_VEC[5]) {//ONE PULSE
         wx = std::vector<vector<double> >(1);     
         file2vector("inputs/photon_e_1.txt", wx[0]);
         n_photon_e = wx[0].size();
@@ -180,7 +183,7 @@ int main()
 			wx[0][i] /=  27.2114;
 		}	
 		cout << "\n";
-        if (BOOL_VEC[4]) { 
+        if (BOOL_VEC[4]) {//BANDWIDTH AVERAGE
         	vector<double> bandwidth_avg;
         	file2vector("inputs/bandwidth_avg.txt", bandwidth_avg);
             band_sample = bandwidth_avg[0];
@@ -189,13 +192,13 @@ int main()
             wn = std::vector<vector<double> >(n_photon_e, vector<double>(band_sample,  0.0));
             UTILITYTDSE.bandwidth_average(bw, gw, wn, wx[0], bandwidth_avg);
         }
-        if (!BOOL_VEC[4]) {
+        if (!BOOL_VEC[4]) {//NO BANDWIDTH AVERAGE
             cout << "No Bandwidth effect applied\n" << endl;
             band_sample = 1;
             gw = std::vector<vector<double> >(n_photon_e, vector<double>(band_sample,  1.0));
         }
     }
-    if (BOOL_VEC[5]) {
+    if (BOOL_VEC[5]) {//TWO PULSE
         wx = std::vector<vector<double> >(2);     
         file2vector("inputs/photon_e_1.txt", wx[0]);
         file2vector("inputs/photon_e_2.txt", wx[1]);
@@ -217,7 +220,7 @@ int main()
     int n_intensity  = 1;
     int shell_sample = 1;
     double spot_size = spot[0];                 //micron
-    if (!BOOL_VEC[5]) {
+    if (!BOOL_VEC[5]) {//ONE PULSE
         intensity = std::vector<vector<double> >(1);     
         file2vector("inputs/intensity_1.txt", intensity[0]);
         n_intensity = intensity[0].size();
@@ -225,7 +228,7 @@ int main()
 	    for(int i = 0; i < n_intensity; i++) {
 			cout << intensity[0][i] << endl;
 		}
-		if (BOOL_VEC[14]) {
+		if (BOOL_VEC[14]) {//INTENSITY CALIBRATION
 		cout << "Howver intensity to be determined from saturation fluence for a given pair of transitions" << endl;
 			intensity[0][0] = UTILITYTDSE.icalib(Matrix, mu, wx, spot_size, var);
 		}
@@ -383,6 +386,7 @@ int main()
 	UTILITYTDSE.decay_widths = decay_widths;
 	UTILITYTDSE.decay_channels = decay_channels;
 	UTILITYTDSE.BOOL_VEC = BOOL_VEC;
+	UTILITYTDSE.n_pulse = n_pulse;
 
     clock_t startTime;    
     for(int ei = 0; ei < n_calc; ei++) {

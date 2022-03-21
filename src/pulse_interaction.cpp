@@ -99,7 +99,7 @@ void TDSEUTILITY::focal_volume_average(double spot_size, vector<vector<double> >
 void TDSEUTILITY::bandwidth_average(double bw, std::vector<vector<double> >& gw, std::vector<vector<double> >& wn, std::vector<double> wx, vector<double> bandwidth_avg)
 {
     cout << "Sampling " << wx.size() << " central photon energies." << endl;
-    cout << "for each central photon energy the " << bw * 27.2114 << " eV " << "bandwith effect will sample " << bandwidth_avg[0] << " energies.\n" << endl;
+    cout << "The " << bw * 27.2114 << " eV " << "bandwith effect will sample " << bandwidth_avg[0] << " energies.\n" << endl;
     for(int i = 0; i < static_cast<int>(wx.size()); i++) {
         double step = ((wx[i] + (bandwidth_avg[1] * bw)) - (wx[i] - (bandwidth_avg[1] * bw))) / bandwidth_avg[0];
         for(int j = 0; j < static_cast<int>(gw[i].size()); j++) {
@@ -172,7 +172,7 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 			//photo_gamma = vector<vector<double> > (1, vector<double>(n, 0.0));
 			photo_gamma = vector<vector<vector<double> > > (1, vector<vector<double> >(n, vector<double>(nt, 0.0)));
 			for(int i = 0; i < n; i++) {
-				//auger_gamma[0][i] = decay_widths[0][0][i] / 27.2114;
+				auger_gamma[0][i] = decay_widths[0][0][i] / 27.2114;
 				auger_gamma[0][i] = decay_widths[0][0][i];
 				photo_sigma[0][i] = decay_widths[0][1][i] / 28.0175; //convert megabarn to a.u.
 			}
@@ -206,6 +206,7 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 	DRIVEEOM.Matrix = Matrix;
 	DRIVEEOM.mu = mu;
 	DRIVEEOM.auger_gamma = auger_gamma;
+	DRIVEEOM.n_pulse = n_pulse;
 	if (!BOOL_VEC[5]) {
 		DRIVEEOM.photo_gamma = vector<vector<double> > (1, vector<double>(n, 0.0));
 	}
@@ -214,7 +215,7 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 	}
 	DRIVEEOM.decay_channels = decay_channels;
 	DRIVEEOM.BOOL_VEC = BOOL_VEC;
-
+	
     #pragma omp parallel for collapse(2)
     for(int a = 0; a < shell_sample; a++) {
         for(int b = 0; b < band_sample; b++) {
@@ -222,7 +223,7 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
             vector<vec1x > pt(neqn, vec1x (nt, complexd(0.0,0.0)));	
 		    vec1x y (neqn, complexd(0.0,0.0));	
     	    y[0] = 1.0; //initial condition - all in the G-state
-			//y[9] = 1.0;
+
 		    for(int i = 0; i<nt; i++) { 
 
 		        double t0 = tstart + i*dt;
@@ -231,23 +232,17 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 			    vector<double> Et;
                 if (!BOOL_VEC[5]) {//ONE PULSE
                     Et = vector<double>(1);
-                    if (BOOL_VEC[1]) {
-                        Et[0] = gaussian_field(tf, tmax[0], field_strength_[0][a] * gw_[b], var[0]);
-                    }
-                    if (!BOOL_VEC[1]) {
-                        Et[0] = field_strength_[0][a] * gw_[b];
-                    }      
-                }
+				}
                 if (BOOL_VEC[5]) {//TWO PULSE
                     Et = vector<double>(2);
+				}
+				for(int pulses = 0; pulses < n_pulse; pulses++) {
                     if (BOOL_VEC[1]) {//GAUSS
-                        Et[0] = gaussian_field(tf, tmax[0], field_strength_[0][a] * gw_[b], var[0]);
-                        Et[1] = gaussian_field(tf, tmax[1], field_strength_[1][a] * gw_[b], var[1]);
+                        Et[pulses] = gaussian_field(tf, tmax[pulses], field_strength_[pulses][a] * gw_[b], var[pulses]);
                     }
-                    if (!BOOL_VEC[1]) {//NO GAUSS 
-                        Et[0] = field_strength_[0][a] * gw_[b];
-                        Et[1] = field_strength_[1][a] * gw_[b];
-                    }
+                    if (!BOOL_VEC[1]) {//NO GAUSS
+                        Et[pulses] = field_strength_[pulses][a] * gw_[b];
+                    }      
                 }
                 if (BOOL_VEC[4]) {//BANDWIDTH AVERAGE
                     wx_[0] = wn_[b];
@@ -256,61 +251,50 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 				DRIVEEOM.wx = wx_;
 
 				if (BOOL_VEC[2]) {//DECAY WIDTHS
-					if(!BOOL_VEC[5]) {//ONE PULSE
+					for(int pulses = 0; pulses < n_pulse; pulses++) {
 						for(int states = 0; states < n; states++) {
-							photo_gamma[0][states][i] = (photo_sigma[0][states] / wx_[0]) * pow(Et[0],2);
+							photo_gamma[pulses][states][i] = (photo_sigma[pulses][states] / wx_[pulses]) * pow(Et[pulses],2);
 						}
 					}
-					if (BOOL_VEC[5]) {//TWO PULSE
+
+					for(int pulses = 0; pulses < n_pulse; pulses++) {
 						for(int states = 0; states < n; states++) {
-							photo_gamma[0][states][i] = (photo_sigma[0][states] / wx_[0]) * pow(Et[0],2);
-							photo_gamma[1][states][i] = (photo_sigma[1][states] / wx_[1]) * pow(Et[1],2);
+							DRIVEEOM.photo_gamma[pulses][states] = photo_gamma[pulses][states][i];
 						}
 					}
 				}
-	/*			if (!BOOL_VEC[2]) {//NO DECAY WIDTHS
-					if(!BOOL_VEC[5]) {//ONE PULSE
-						photo_gamma = vector<vector<double> > (1, vector<double>(n, 0.0));
-					}
-					if(BOOL_VEC[5]) {//TWO PULSE
-						photo_gamma = vector<vector<double> > (2, vector<double>(n, 0.0));
-					}
-				}*/
-				for(int pulses = 0; pulses < static_cast<int>(field.size()); pulses++) {
-					for(int states = 0; states < n; states++) {
-						DRIVEEOM.photo_gamma[pulses][states] = photo_gamma[pulses][states][i];
-              		}
-				}
+
 				DRIVEEOM.photo_gamma_vec = photo_gamma;
 				DRIVEEOM.RK4(y, t0, tf);
 
                 if(ei == 0 and a == 0 and b == 0) {
-                    for(int pulses = 0; pulses < static_cast<int>(field.size()); pulses++) {
+                    for(int pulses = 0; pulses < n_pulse; pulses++) {
                         if(!BOOL_VEC[0]) {//NO RWA
                             field[pulses][i] = Et[pulses] * cos(wx_[pulses] * tf);
 						}           
 					}
                 }
                      
-		        //tf_vec[i] = tf * 0.0241;
-		        tf_vec[i] = tf;
+				if (BOOL_VEC[0] && BOOL_VEC[9] && !BOOL_VEC[1]) {//RWA, TWO STATE AND NO GAUSS (A.U. DEMO MODE)
+		        	tf_vec[i] = tf;
+				}
+				else {
+					tf_vec[i] = tf * 0.0241;
+				}
 
 			    norm_t[i]  = 0.0;
-				/*	
-    		    for (int j = 0; j<neqn; j++) {                        
-				    pt[j][i]    = std::norm(y[j]);
-				    norm_t[i]  += pt[j][i].real();
 
-			    }*/
     		    for (int j = 0; j<n; j++) {                        
 				    pt[j][i]    = std::norm(y[j]);
 			    }
 				if (BOOL_VEC[13]) {//POPULATION LOSS CHANNELS
-					for(int k = 0; k < n_decay_chan; k++) {
-						for (int j = (n * (k+1)); j < n * (k+2); j++) {
 
+					for(int k = 0; k < n_decay_chan; k++) {
+    				#pragma omp parallel for
+						for (int j = (n * (k+1)); j < n * (k+2); j++) {
 							//pt[j][i] = DRIVEEOM.Analytical_Population_Loss(tf, j, k);
-							pt[j][i] = DRIVEEOM.Numerical_Population_Loss(i, j, k, tf_vec[i]-tf_vec[i-1], pt[j-(n*(k+1))]);
+							//pt[j][i] = DRIVEEOM.Numerical_Population_Loss(i, j, k, dt, pt[j-(n*(k+1))]);
+							DRIVEEOM.Numerical_Population_Loss(i, j, k, dt, nt, pt[j-(n*(k+1))], pt[j]);
 
 						}
 					}
@@ -348,9 +332,9 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 
         norm_t_vec_avg[i] /= (shell_sample * band_sample);
     }
-    if (BOOL_VEC[11]) {//WRITW FIELD
+    if (BOOL_VEC[11]) {//WRITE FIELD
         if(ei == 0) {
-            for(int n = 0; n < static_cast<int>(field.size()); n++) {
+            for(int n = 0; n < n_pulse; n++) {
                 write_field("outputs/gnu/pulse_"+convertInt(n)+".txt", nt, 100, tf_vec, field[n]);
             }
         }
@@ -364,6 +348,5 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 double TDSEUTILITY::gaussian_field(double t, double t_max, double amp_max, double var)
 {
    	double Et = amp_max * exp(-1 * (pow((t - t_max),2)) / (2 * (pow(var,2))));
-
 	return Et;
 }

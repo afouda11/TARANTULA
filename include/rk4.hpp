@@ -33,11 +33,13 @@ EOMDRIVER(void);
 	vector<vector<vector<double> > > photo_gamma_vec;
 	vector<string> decay_channels;
 	vector<bool> BOOL_VEC;
+	int n_pulse;
 
 void RK4(vec1x & y, double t0, double tf);
 
 double Analytical_Population_Loss(double tf, int j, int k);
-double Numerical_Population_Loss(int i, int j, int k, double dt, vec1x pt);
+//double Numerical_Population_Loss(int i, int j, int k, double dt, vec1x pt);
+void Numerical_Population_Loss(int i, int j, int k, double dt, int nt, vec1x pt_state, vec1x & pt_loss);
 
 private:
 

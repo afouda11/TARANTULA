@@ -24,6 +24,7 @@ TDSEUTILITY(void);
 	vector<vector<vector<double> > > decay_widths;
 	vector<string> decay_channels;
 	vector<bool> BOOL_VEC;
+	int n_pulse;
 
 
 double icalib(vector<arma::mat> Matrix, vector<vector<double> > mu, std::vector<vector<double> > ww, double spot_size, vector<double> var);
