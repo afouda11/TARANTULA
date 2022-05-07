@@ -5,7 +5,8 @@ class TDSEUTILITY {
 
 public:
 
-TDSEUTILITY(void);
+	TDSEUTILITY();
+	~TDSEUTILITY();
 
 	int shell_sample;
 	int band_sample;

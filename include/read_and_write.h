@@ -27,7 +27,8 @@ class FILEWRITER {
 
 public:
 
-	FILEWRITER(void); 
+	FILEWRITER(); 
+	~FILEWRITER(); 
 
 	int nt;
     int n_type;

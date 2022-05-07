@@ -23,10 +23,10 @@
 
 int main()
 {
-    cout << "\n\n*!*!*!*!*!*!*!* TDSE(RK4) Solver for XFEL experiments *!*!*!*!*!*!*!*\n\n" << endl;
+    cout << "\n\n*!*!*!* TDSE(RK4) Solver for XFEL experiments *!*!*!*\n\n" << endl;
 
 	//Read in bool options
-    vector<bool> BOOL_VEC(16);
+    vector<bool> BOOL_VEC(17);
     //vector<bool> * BOOL_VEC = new vector<bool>(16);
     BOOL_VEC[0]  = read_bool_options("RWA");
     BOOL_VEC[1]  = read_bool_options("GAUSS");
@@ -43,6 +43,8 @@ int main()
     BOOL_VEC[12] = read_bool_options("PAIR_SUM");
     BOOL_VEC[13] = read_bool_options("DECAY_AMP");
 	BOOL_VEC[14] = read_bool_options("ICALIB");
+	//ECALC is BOOL_VEC[15]
+	BOOL_VEC[16] = read_bool_options("DEBUG");
 
 	//Force correct two-state simulation parameters
     if (BOOL_VEC[9]) {//TWO STATE
@@ -75,8 +77,9 @@ int main()
 		n_pulse = 1;
     }
     if (BOOL_VEC[5]) {//TWO PULSE
-        cout << "2 Pulse caclulcation. Currently only one intensity and energy can be used for each pulse," << endl;
-        cout << "and no bandwidth or focal volume averaging effects can be applied at this current time.\n" << endl;
+        cout << "2 Pulse caclulcation" << endl; 
+		cout << "Currently only 1 intensity and energy for each pulse," << endl;
+        cout << "No bandwidth or focal volume averaging current implemented.\n" << endl;
         vector<double> pulse1;
         vector<double> pulse2;
         file2vector("inputs/pulse_1.txt", pulse1);
@@ -166,6 +169,7 @@ int main()
     }
 	//TDSE utility object, runs EOM derivatives etc.
 	TDSEUTILITY UTILITYTDSE;
+	UTILITYTDSE.BOOL_VEC = BOOL_VEC;
 
     //Central photon energy and bandwidth sampling
     std::vector<vector<double> > gw; //for bandwidth effect and 2 pulse this would need to be a vecvecvec(double)
@@ -191,6 +195,12 @@ int main()
             gw = std::vector<vector<double> >(n_photon_e, vector<double>(band_sample,  0.0));
             wn = std::vector<vector<double> >(n_photon_e, vector<double>(band_sample,  0.0));
             UTILITYTDSE.bandwidth_average(bw, gw, wn, wx[0], bandwidth_avg);
+			if (BOOL_VEC[16]) {//DEBUG
+				cout << "gw    " << "wn" << endl;
+				for(int i = 0; i < band_sample; i++) {
+					cout << gw[0][i] << " " << wn[0][i]*27.2114 << endl;
+				}
+			}
         }
         if (!BOOL_VEC[4]) {//NO BANDWIDTH AVERAGE
             cout << "No Bandwidth effect applied\n" << endl;
@@ -215,11 +225,11 @@ int main()
     }
 
     //Peak intensity and focal volume averaging
-    std::vector<vector<double> > intensity;          //intensity
+    std::vector<vector<double> > intensity; //intensity
     vector<vector<vector<double> > > field_strength;	
     int n_intensity  = 1;
     int shell_sample = 1;
-    double spot_size = spot[0];                 //micron
+    double spot_size = spot[0]; //micron
     if (!BOOL_VEC[5]) {//ONE PULSE
         intensity = std::vector<vector<double> >(1);     
         file2vector("inputs/intensity_1.txt", intensity[0]);
@@ -233,14 +243,14 @@ int main()
 			intensity[0][0] = UTILITYTDSE.icalib(Matrix, mu, wx, spot_size, var);
 		}
 
-        if (BOOL_VEC[3]) {
+        if (BOOL_VEC[3]) {//FOCAL VOLUME AVG.
         	vector<int> focalvol_avg;
         	file2vector("inputs/focalvol_avg.txt", focalvol_avg);
             shell_sample = focalvol_avg[0];
             field_strength = vector<vector<vector<double> > > (1,  vector<vector<double> >(n_intensity, vector<double>(shell_sample, 0.0)));
             UTILITYTDSE.focal_volume_average(spot_size, field_strength[0], intensity[0], shell_sample);
         }
-        if (!BOOL_VEC[3]) {
+        if (!BOOL_VEC[3]) {//NO FOCAL VOLUME AVG.
             cout << "No focal volume effect applied\n" << endl;
             shell_sample = 1;
             field_strength = vector<vector<vector<double> > > (1,  vector<vector<double> >(n_intensity, vector<double>(shell_sample, 0.0)));
@@ -385,7 +395,6 @@ int main()
 	UTILITYTDSE.mu = mu;
 	UTILITYTDSE.decay_widths = decay_widths;
 	UTILITYTDSE.decay_channels = decay_channels;
-	UTILITYTDSE.BOOL_VEC = BOOL_VEC;
 	UTILITYTDSE.n_pulse = n_pulse;
 
     clock_t startTime;    
@@ -396,9 +405,9 @@ int main()
 
         UTILITYTDSE.eom_run(ei, tf_vec, pt_vec_avg[ei], norm_t_vec_avg[ei]);
 
-        if(BOOL_VEC[6]) {
+        if(BOOL_VEC[6]) {//PERP_AVG
             mu[0][0] = 0.0; mu[0][1] = 1.0; mu[0][2] = 0.0;
-            if(BOOL_VEC[5]) {//not properly implemented for two pulse, assumes both pusles perpendicular to z
+            if(BOOL_VEC[5]) {//TWO_PULSE not properly implemented, assumes both pusles perpendicular to z
                 mu[1][0] = 0.0; 
 				mu[1][1] = 1.0; 
 				mu[1][2] = 0.0;
@@ -411,19 +420,20 @@ int main()
             mu[0][0] = 1.0; 
 			mu[0][1] = 0.0; 
 			mu[0][2] = 0.0;
-            if(BOOL_VEC[5]) {//not properly implemented for two pulse, assumes both pusles perpendicular to z
+            if(BOOL_VEC[5]) {//TWO_PULSE not properly implemented, assumes both pusles perpendicular to z
             	mu[1][0] = 1.0; 
 				mu[1][1] = 0.0; 
 				mu[1][2] = 0.0;
             }
+			UTILITYTDSE.mu = mu;
         }
 
         cout << "RK4 Time:\n" << double( clock() - startTime ) / (double)CLOCKS_PER_SEC<< " seconds.\n" << endl;
 
-        //SUM groups of states listed input/group_names.txt and correpseonding _index.txt files to neaten represenation
-        if (BOOL_VEC[7]) {
+        //SUM groups of states listed input/group_names.txt and _index.txt files to neaten represenation
+        if (BOOL_VEC[7]) {//GROUP_SUM
             group_sum(n_sum_type, nt, neqn, n_decay_chan, pt_sum_vec[ei], pt_vec_avg[ei]);
-            if(BOOL_VEC[6]) {
+            if(BOOL_VEC[6]) {//PERP_AVG
                 group_sum(n_sum_type, nt, neqn, n_decay_chan, pt_sum_vec_perp[ei], pt_vec_avg_perp[ei]);
             }
             cout << "Sum complete" << endl;

@@ -21,7 +21,8 @@ class EOMDRIVER {
 
 public:
 
-EOMDRIVER(void);
+	EOMDRIVER();
+	~EOMDRIVER();
 
 	int n;
 	vector<arma::mat> Matrix;

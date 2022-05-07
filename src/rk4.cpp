@@ -16,8 +16,10 @@
 #include <omp.h>
 #endif
 
-EOMDRIVER::EOMDRIVER(void){
+EOMDRIVER::EOMDRIVER(){
+}
 
+EOMDRIVER::~EOMDRIVER(){
 }
 
 void EOMDRIVER::RK4(vec1x & y, double t0, double tf) {

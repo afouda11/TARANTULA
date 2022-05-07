@@ -146,9 +146,9 @@ void pair_sum(int nt, int n_type, int n_decay_chan, vector<vec1x >& pt_vec_, vec
     return;
 }
 
-FILEWRITER::FILEWRITER(void){
-
-	//no contructors
+FILEWRITER::FILEWRITER(){
+}
+FILEWRITER::~FILEWRITER(){
 }
 
 void FILEWRITER::write_data_files(string outfilename, vector<vec1x> pt_vec, vector<vec1x> pt_sum_vec, vector<vec1x>& pt_vec_perp, vector<vec1x>& pt_sum_vec_perp, vector<double> norm_t_vec_avg, vector<double>& norm_t_vec_avg_perp) {
