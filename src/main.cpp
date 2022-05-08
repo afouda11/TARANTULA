@@ -64,16 +64,16 @@ int main()
     if (!BOOL_VEC[5]) {//ONE PULSE
         cout << "1 Pulse caclulcation.\n" << endl;
         vector<double> pulse1;
-        file2vector("inputs/pulse_1.txt", pulse1);
+        //file2vector("inputs/pulse_1.txt", pulse1);
         fwhm  = vector<double>(1);
         var   = vector<double>(1);
         tmax  = vector<double>(1);
         width = vector<double>(1);
         spot  = vector<double>(1);
-        fwhm[0]  = pulse1[0];
-        tmax[0]  = pulse1[1];
-		width[0] = pulse1[2];
-		spot[0]  = pulse1[3];
+        fwhm[0]  = read_double_options("PULSE_1_FWHM");
+        tmax[0]  = read_double_options("PULSE_1_TMAX");
+		width[0] = read_double_options("PULSE_1_WIDTH");
+		spot[0]  = read_double_options("PULSE_1_SPOT_SIZE");
 		n_pulse = 1;
     }
     if (BOOL_VEC[5]) {//TWO PULSE
@@ -82,21 +82,21 @@ int main()
         cout << "No bandwidth or focal volume averaging current implemented.\n" << endl;
         vector<double> pulse1;
         vector<double> pulse2;
-        file2vector("inputs/pulse_1.txt", pulse1);
-        file2vector("inputs/pulse_2.txt", pulse2);
+        //file2vector("inputs/pulse_1.txt", pulse1);
+        //file2vector("inputs/pulse_2.txt", pulse2);
         fwhm  = vector<double>(2);
         var   = vector<double>(2);
         tmax  = vector<double>(2);
         width = vector<double>(2);
         spot  = vector<double>(2);
-        fwhm[0]  = pulse1[0]; 
-        fwhm[1]  = pulse2[0]; 
-        tmax[0]  = pulse1[1]; 
-        tmax[1]  = pulse2[1]; 
-        width[0] = pulse1[2]; 
-        width[1] = pulse2[2]; 
-        spot[0]  = pulse1[3]; 
-        spot[1]  = pulse2[3];
+        fwhm[0]  = read_double_options("PULSE_1_FWHM"); 
+        fwhm[1]  = read_double_options("PULSE_2_FWHM");
+        tmax[0]  = read_double_options("PULSE_1_TMAX"); 
+        tmax[1]  = read_double_options("PULSE_2_TMAX"); 
+        width[0] = read_double_options("PULSE_1_WIDTH"); 
+        width[1] = read_double_options("PULSE_2_WIDTH"); 
+        spot[0]  = read_double_options("PULSE_1_SPOT_SIZE"); 
+        spot[1]  = read_double_options("PULSE_2_SPOT_SIZE");
 		n_pulse = 2;
     }
     for (int i = 0; i < static_cast<int>(var.size()); i++) {
@@ -107,29 +107,30 @@ int main()
 	//Read and process time information
     vector<double> time_info;
     double tstart;
-    file2vector("inputs/time_info.txt", time_info);
-    if (time_info[0] == 0.0) {
+    //file2vector("inputs/time_info.txt", time_info);
+    //if (time_info[0] == 0.0) {
+    if (read_double_options("TSTART") == 0.0) {
 		if (BOOL_VEC[1]) {//GAUSSIAN PULSE
         	tstart = tmax[0] - (6 * var[0]); //by default pulse 1 arrives before pulse 2
 		}
 		if (!BOOL_VEC[1]) {//CONSTANT FIELD
         	tstart = 0.0;
 		}
-    }
+    } 
     else {
-        tstart = time_info[0] * 41.34137;
+        tstart = read_double_options("TSTART") * 41.34137;
     }
-    double tend = time_info[1] * 41.34137;
-    double dt   = time_info[2] * 41.34137;
+    double tend = read_double_options("TEND") * 41.34137;
+    double dt   = read_double_options("DT") * 41.34137;
     int nt      = round((tend-tstart)/dt);
-    int n_print = time_info[3]; //the every nth timestep that get printed
-
+    //int n_print = time_info[3]; //the every nth timestep that get printed
+	int n_print = read_int_options("N_PRINT");
 	//Read in number of states, pairs and groups
     std::vector<int> n_states;       
-    file2vector("inputs/n_states.txt", n_states);
-    int neqn       = n_states[0];
-    int n_sum_type = n_states[1];
-    int n_type     = n_states[2];
+    //file2vector("inputs/n_states.txt", n_states);
+    int neqn       = read_int_options("NEQN");
+    int n_sum_type = read_int_options("N_SUM_TYPE");
+    int n_type     = read_int_options("N_TYPE");
 	if (!BOOL_VEC[9]) {
     	cout << "The system involves " << neqn << " electronic states" << endl;
 	}
@@ -159,13 +160,19 @@ int main()
 	//Read light polarization vector
 	vector<vector<double> > mu;
     if (!BOOL_VEC[5]) {//ONE PULSE
-        mu = vector<vector<double> >(1);
-        file2vector("inputs/polarization_1.txt", mu[0]); 
+        mu = vector<vector<double> >(1, vector<double> (3));
+		mu[0][0] = read_double_options("PULSE_1_MU_X");
+		mu[0][1] = read_double_options("PULSE_1_MU_Y");
+		mu[0][2] = read_double_options("PULSE_1_MU_Z");
     }
     if (BOOL_VEC[5]) {//TWO PULSE
-        mu = vector<vector<double> >(2);
-        file2vector("inputs/polarization_1.txt", mu[0]); 
-        file2vector("inputs/polarization_2.txt", mu[1]); 
+        mu = vector<vector<double> >(2, vector<double> (3));
+		mu[0][0] = read_double_options("PULSE_1_MU_X");
+		mu[0][1] = read_double_options("PULSE_1_MU_Y");
+		mu[0][2] = read_double_options("PULSE_1_MU_Z");
+		mu[1][0] = read_double_options("PULSE_2_MU_X");
+		mu[1][1] = read_double_options("PULSE_2_MU_Y");
+		mu[1][2] = read_double_options("PULSE_2_MU_Z");
     }
 	//TDSE utility object, runs EOM derivatives etc.
 	TDSEUTILITY UTILITYTDSE;
@@ -244,9 +251,9 @@ int main()
 		}
 
         if (BOOL_VEC[3]) {//FOCAL VOLUME AVG.
-        	vector<int> focalvol_avg;
-        	file2vector("inputs/focalvol_avg.txt", focalvol_avg);
-            shell_sample = focalvol_avg[0];
+        	//vector<int> focalvol_avg;
+        	//file2vector("inputs/focalvol_avg.txt", focalvol_avg);
+            shell_sample = read_int_options("FV_SAMPLE_SIZE");;
             field_strength = vector<vector<vector<double> > > (1,  vector<vector<double> >(n_intensity, vector<double>(shell_sample, 0.0)));
             UTILITYTDSE.focal_volume_average(spot_size, field_strength[0], intensity[0], shell_sample);
         }

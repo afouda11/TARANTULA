@@ -16,6 +16,8 @@ void file2vector(std::string filename, std::vector<T>& vec) {
 }
 
 bool read_bool_options(string option);
+int  read_int_options(string option);
+double read_double_options(string option);
 
 arma::mat read_matrix(int n, std::string Diagonal, std::string Off_Diagonal);
 

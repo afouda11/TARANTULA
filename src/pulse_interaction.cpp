@@ -100,18 +100,21 @@ void TDSEUTILITY::focal_volume_average(double spot_size, vector<vector<double> >
 
 void TDSEUTILITY::bandwidth_average(double bw, std::vector<vector<double> >& gw, std::vector<vector<double> >& wn, std::vector<double> wx, vector<double> bandwidth_avg)
 {
+
+	double sample_size = read_int_options("BW_SAMPLE_SIZE");
+	double extent = read_int_options("BW_EXTENT");
     cout << "Sampling " << wx.size() << " central photon energies." << endl;
-    cout << "The " << bw * 27.2114 << " eV " << "bandwith effect will sample " << bandwidth_avg[0] << " energies.\n" << endl;
+    cout << "The " << bw * 27.2114 << " eV " << "bandwith effect will sample " << sample_size << " energies.\n" << endl;
     for(int i = 0; i < static_cast<int>(wx.size()); i++) {
-        double step = ((wx[i] + (bandwidth_avg[1] * bw)) - (wx[i] - (bandwidth_avg[1] * bw))) / bandwidth_avg[0];
+        double step = ((wx[i] + (extent * bw)) - (wx[i] - (extent * bw))) / sample_size;
 		cout << step << endl;
-        for(int j = 0; j < bandwidth_avg[0]; j++) {
+        for(int j = 0; j < sample_size; j++) {
              wn[i][j] = (wx[i] - (3 * bw)) + (j * step);
              gw[i][j] = exp( (-1 * pow(wn[i][j] - wx[i], 2)) / (2 * pow(bw, 2) ) ) / pow(2 * M_PI * pow(bw, 2), 0.5);
         }
-		if(BOOL_VEC[16]) {
+		if(BOOL_VEC[16]) {//DEBUG
 			double dum = 0.0;
-			for(int j = 0; j < bandwidth_avg[0]; j++) {
+			for(int j = 0; j < sample_size; j++) {
 				dum += gw[i][j] * step;
 			}
 			cout << "weighting integral = " << dum << endl;
