@@ -148,78 +148,37 @@ FILEWRITER::FILEWRITER(){
 FILEWRITER::~FILEWRITER(){
 }
 
-void FILEWRITER::write_data_files(string outfilename, vector<vec1x> pt_vec, vector<vec1x> pt_sum_vec, vector<vec1x>& pt_vec_perp, vector<vec1x>& pt_sum_vec_perp, vector<double> norm_t_vec_avg, vector<double>& norm_t_vec_avg_perp) {
+void FILEWRITER::write_data_files(string outfilename, vector<vec1x> pt_vec, vector<vec1x>& pt_vec_perp, vector<double> norm_t_vec_avg, vector<double>& norm_t_vec_avg_perp) {
    
-    if (BOOL_VEC[7]) {
-        string gnufilepath = "outputs/gnu/sum/"+outfilename;        
-        string outfilepath = "outputs/out/sum/"+outfilename;        
-        write_data(gnufilepath+".txt", n_sum_type, pt_sum_vec, norm_t_vec_avg, true);
-        write_data(outfilepath+".txt", n_sum_type, pt_sum_vec, norm_t_vec_avg, false);
-        if (BOOL_VEC[6]) {
-            write_data(gnufilepath+"_x.txt", n_sum_type, pt_sum_vec, norm_t_vec_avg, true);
-            write_data(outfilepath+"_x.txt", n_sum_type, pt_sum_vec, norm_t_vec_avg, false);
-            write_data(gnufilepath+"_y.txt", n_sum_type, pt_sum_vec_perp, norm_t_vec_avg_perp, true);
-            write_data(outfilepath+"_y.txt", n_sum_type, pt_sum_vec_perp, norm_t_vec_avg_perp, false);
-            for (int i = 0; i<nt; i++) {
-                for (int j = 0; j<n_sum_type; j++) {
-                  pt_sum_vec_perp[j][i] = (pt_sum_vec_perp[j][i] + pt_sum_vec[j][i]) / 2.0; 
-                }
-                norm_t_vec_avg_perp[i] = (norm_t_vec_avg_perp[i] + norm_t_vec_avg[i]) / 2.0;
-            }
-            write_data(gnufilepath+"_perp.txt", n_sum_type, pt_sum_vec_perp, norm_t_vec_avg_perp, true);
-            write_data(outfilepath+"_perp.txt", n_sum_type, pt_sum_vec_perp, norm_t_vec_avg_perp, false);
-        }
-    }
-    string gnufilepath = "outputs/gnu/"+outfilename;        
     string outfilepath = "outputs/out/"+outfilename;        
-    write_data(gnufilepath+".txt", n_type, pt_vec, norm_t_vec_avg, true);
-    write_data(outfilepath+".txt", n_type, pt_vec, norm_t_vec_avg, false);
+    write_data(outfilepath+".txt", neqn, pt_vec, norm_t_vec_avg, false);
     if (BOOL_VEC[6]) {
-        write_data(gnufilepath+"_x.txt", n_type, pt_vec, norm_t_vec_avg, true);
-        write_data(outfilepath+"_x.txt", n_type, pt_vec, norm_t_vec_avg, false);
-        write_data(gnufilepath+"_y.txt", n_type, pt_vec_perp, norm_t_vec_avg_perp, true);
-        write_data(outfilepath+"_y.txt", n_type, pt_vec_perp, norm_t_vec_avg_perp, false);
+        write_data(outfilepath+"_x.txt", neqn, pt_vec, norm_t_vec_avg, false);
+        write_data(outfilepath+"_y.txt", neqn, pt_vec_perp, norm_t_vec_avg_perp, false);
         for (int i = 0; i<nt; i++) {
-            for (int j = 0; j<n_type; j++) {
+            for (int j = 0; j<neqn; j++) {
                  pt_vec_perp[j][i] = (pt_vec_perp[j][i] + pt_vec[j][i]) / 2.0;
             }
             norm_t_vec_avg_perp[i] = (norm_t_vec_avg_perp[i] + norm_t_vec_avg[i]) /2.0;
         }
-        write_data(gnufilepath+"_perp.txt", n_type, pt_vec_perp, norm_t_vec_avg_perp, true);
-        write_data(outfilepath+"_perp.txt", n_type, pt_vec_perp, norm_t_vec_avg_perp, false);         
+        write_data(outfilepath+"_perp.txt", neqn, pt_vec_perp, norm_t_vec_avg_perp, false);         
     }
 }
 
 
-void FILEWRITER::write_data_variable_files(vector<vector<vec1x> > pt_vec, vector<vector<vec1x> > pt_sum_vec, vector<vector<vec1x> > pt_vec_perp, vector<vector<vec1x> > pt_sum_vec_perp) {
+void FILEWRITER::write_data_variable_files(vector<vector<vec1x> > pt_vec, vector<vector<vec1x> > pt_vec_perp) {
 
 if (varstring == "energy") { //convert energy to ev for printing
 	for (int i = 0; i < n_photon_e; i++) variable[i] *=  27.2114;
 }
     
-    string gnufilepath = "outputs/gnu/sum/variable/";
-    string outfilepath = "outputs/out/sum/variable/";
     cout << "Writing energy/intensity variable data at t_final\n" << endl;
-    if (BOOL_VEC[7]) {
-        write_data_variable(gnufilepath+""+varstring+".txt", n_sum_type, pt_sum_vec, true); 
-        write_data_variable(outfilepath+""+varstring+".txt", n_sum_type, pt_sum_vec, false); 
-    }
-    gnufilepath = "outputs/gnu/variable/";
-    outfilepath = "outputs/out/variable/";
-	write_data_variable(gnufilepath+""+varstring+".txt", n_type, pt_vec, true); 
-	write_data_variable(outfilepath+""+varstring+".txt", n_type, pt_vec, false);
+    string outfilepath = "outputs/out/variable/";
+	write_data_variable(outfilepath+""+varstring+".txt", neqn, pt_vec, false);
 
-    gnufilepath = "outputs/gnu/sum/variable/";
-    outfilepath = "outputs/out/sum/variable/";
     if (BOOL_VEC[6]) { //only averaged reuslt printed
-        if (BOOL_VEC[7]) {
-            write_data_variable(gnufilepath+""+varstring+"_perp.txt", n_sum_type, pt_sum_vec_perp, true); 
-            write_data_variable(outfilepath+""+varstring+"_perp.txt", n_sum_type, pt_sum_vec_perp, false); 
-        }
-        gnufilepath = "outputs/gnu/variable/";
         outfilepath = "outputs/out/variable/";
-		write_data_variable(gnufilepath+""+varstring+"_perp.txt", n_type, pt_vec_perp, true); 
-		write_data_variable(outfilepath+""+varstring+"_perp.txt", n_type, pt_vec_perp, false); 
+		write_data_variable(outfilepath+""+varstring+"_perp.txt", neqn, pt_vec_perp, false); 
     }
 }    
 

@@ -56,8 +56,6 @@ public:
 	~FILEWRITER(); 
 
 	int nt;
-    int n_type;
-    int n_sum_type;
     int n_print;
     vector<double> tf_vec;
 	vector<bool> BOOL_VEC;
@@ -67,9 +65,9 @@ public:
 	vector<double> variable;
 	string varstring;
 
-void write_data_files(string outfilename, vector<vec1x> pt_vec, vector<vec1x> pt_sum_vec, vector<vec1x>& pt_vec_perp, vector<vec1x>& pt_sum_vec_perp, vector<double> norm_t_vec_avg, vector<double>& norm_t_vec_avg_perp);
+void write_data_files(string outfilename, vector<vec1x> pt_vec, vector<vec1x>& pt_vec_perp, vector<double> norm_t_vec_avg, vector<double>& norm_t_vec_avg_perp);
 
-void write_data_variable_files(vector<vector<vec1x> > pt_vec, vector<vector<vec1x> > pt_sum_vec, vector<vector<vec1x> > pt_vec_perp, vector<vector<vec1x> > pt_sum_vec_perp);
+void write_data_variable_files(vector<vector<vec1x> > pt_vec, vector<vector<vec1x> > pt_vec_perp);
 
 private:
 

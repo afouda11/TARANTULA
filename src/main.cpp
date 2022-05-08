@@ -35,12 +35,10 @@ int main()
     BOOL_VEC[4]  = read_bool_options("BANDW_AVG");
     BOOL_VEC[5]  = read_bool_options("TWOPULSE");
     BOOL_VEC[6]  = read_bool_options("PERP_AVG");
-    BOOL_VEC[7]  = read_bool_options("SUM");
     BOOL_VEC[8]  = read_bool_options("PRINT_MAT");
     BOOL_VEC[9]  = read_bool_options("TWOSTATE");
     BOOL_VEC[10] = read_bool_options("STARK");
     BOOL_VEC[11] = read_bool_options("WRITE_PULSE");
-    BOOL_VEC[12] = read_bool_options("PAIR_SUM");
     BOOL_VEC[13] = read_bool_options("DECAY_AMP");
 	BOOL_VEC[14] = read_bool_options("ICALIB");
 	//ECALC is BOOL_VEC[15]
@@ -49,8 +47,6 @@ int main()
 	//Force correct two-state simulation parameters
     if (BOOL_VEC[9]) {//TWO STATE
 		BOOL_VEC[6]  = false;//NO PERPENDICULAR AVERAGE
-        BOOL_VEC[7]  = false;//NO GROUP SUM
-        BOOL_VEC[12] = false;//NO PAIR SUM
 		BOOL_VEC[14] = false;//NO INTENSITY CALIBRATION
     }
 
@@ -125,18 +121,13 @@ int main()
     int nt      = round((tend-tstart)/dt);
 	int n_print;
 	int neqn;
-	int n_sum_type;
-	int n_type;
 	read_options("N_PRINT", n_print);
     read_options("NEQN", neqn);
-   	read_options("N_SUM_TYPE", n_sum_type);
-    read_options("N_TYPE", n_type);
 	if (!BOOL_VEC[9]) {
     	cout << "The system involves " << neqn << " electronic states" << endl;
 	}
     if (BOOL_VEC[9]) {
         neqn = 2;
-        n_type = 2;
 		cout << "Two state system simulation" << endl;
     }
 
@@ -304,11 +295,8 @@ int main()
         for(int i = 0; i < n_decay_chan; i++) {
         	cout << decay_channels[i] << endl;
         } 
-        cout << "\n";
-		
+        cout << "\n";	
         neqn       += neqn       * n_decay_chan;
-        n_type     += n_type     * n_decay_chan;
-        n_sum_type += n_sum_type * n_decay_chan;
     }
 	
 	//Sample single or multiple photon energies and or intensities
@@ -353,24 +341,19 @@ int main()
     //TDSE vector containers
     vector<double> tf_vec(nt, 0.0);
     //involves the summed degenerate paris of final states
-    vector<vector<vec1x > > pt_vec(n_calc, vector<vec1x > (n_type, vec1x (nt, complexd(0.0,0.0))));
+    vector<vector<vec1x > > pt_vec(n_calc, vector<vec1x > (neqn, vec1x (nt, complexd(0.0,0.0))));
     vector<vector<vec1x > > pt_vec_avg(n_calc, vector<vec1x > (neqn, vec1x (nt, complexd(0.0,0.0))));
     vector<vector<double> > norm_t_vec_avg(n_calc, vector<double> (nt, 0.0));
     //used only for averging over x and y initated by PEP_AVG
     vector<vector<vec1x > > pt_vec_avg_perp(n_calc, vector<vec1x > (neqn, vec1x (nt, complexd(0.0,0.0))));
-    vector<vector<vec1x > > pt_vec_perp(n_calc, vector<vec1x > (n_type, vec1x (nt, complexd(0.0,0.0))));
+    vector<vector<vec1x > > pt_vec_perp(n_calc, vector<vec1x > (neqn, vec1x (nt, complexd(0.0,0.0))));
     vector<vector<double> > norm_t_vec_avg_perp(n_calc, vector<double> (nt, 0.0));
-    //for group_sum, if SUM=true
-    vector<vector<vec1x > > pt_sum_vec(n_calc, vector<vec1x > (n_sum_type, vec1x (nt, complexd(0.0,0.0))));
-    vector<vector<vec1x > > pt_sum_vec_perp(n_calc, vector<vec1x > (n_sum_type, vec1x (nt, complexd(0.0,0.0))));
 
 	//vector<bool> *BOOLS;
 	//BOOLS = &BOOL_VEC;
 	//WRITE SUMMED data to files 
 	FILEWRITER WRITEFILES;	
 	WRITEFILES.nt = nt;
-	WRITEFILES.n_type = n_type;
-	WRITEFILES.n_sum_type = n_sum_type;
 	WRITEFILES.n_print = n_print;
 	WRITEFILES.BOOL_VEC = BOOL_VEC;
 	WRITEFILES.n_photon_e = n_photon_e;
@@ -435,44 +418,16 @@ int main()
 
         cout << "RK4 Time:\n" << double( clock() - startTime ) / (double)CLOCKS_PER_SEC<< " seconds.\n" << endl;
 
-        //SUM groups of states listed input/group_names.txt and _index.txt files to neaten represenation
-        if (BOOL_VEC[7]) {//GROUP_SUM
-            group_sum(n_sum_type, nt, neqn, n_decay_chan, pt_sum_vec[ei], pt_vec_avg[ei]);
-            if(BOOL_VEC[6]) {//PERP_AVG
-                group_sum(n_sum_type, nt, neqn, n_decay_chan, pt_sum_vec_perp[ei], pt_vec_avg_perp[ei]);
-            }
-            cout << "Sum complete" << endl;
-        }
-        //sum degenerate pairs of pi states, need to list the pairs in inputs/state_pairs.txt
-        if (!BOOL_VEC[9]) {
-            if (BOOL_VEC[12]) {
-                pair_sum(nt, n_type, n_decay_chan, pt_vec[ei], pt_vec_avg[ei]);
-            }
-            if (!BOOL_VEC[12]) {
-                pt_vec = pt_vec_avg;
-            }       
-        }
-        if (BOOL_VEC[9]) {
-            pt_vec = pt_vec_avg;
-        }
-        if (BOOL_VEC[6]) { //twostate and perp_avg are not compatible together
-            if (BOOL_VEC[12]) {
-                pair_sum(nt, n_type, n_decay_chan, pt_vec_perp[ei], pt_vec_avg_perp[ei]);
-            }      
-            if (!BOOL_VEC[12]) {
-                pt_vec_perp = pt_vec_avg_perp;
-            }      
-        }       
+        pt_vec = pt_vec_avg;
+		pt_vec_perp = pt_vec_avg_perp;
 
 		WRITEFILES.tf_vec = tf_vec;
-		WRITEFILES.write_data_files(convertInt(ei), pt_vec[ei], pt_sum_vec[ei], pt_vec_perp[ei], pt_sum_vec_perp[ei], norm_t_vec_avg[ei], norm_t_vec_avg_perp[ei]);
+		WRITEFILES.write_data_files(convertInt(ei), pt_vec[ei], pt_vec_perp[ei], norm_t_vec_avg[ei], norm_t_vec_avg_perp[ei]);
     }
-
     if (n_calc > 1) { //only for 1 pulse calc over mutiple intensities or energies
-        WRITEFILES.write_data_variable_files(pt_vec, pt_sum_vec, pt_vec_perp, pt_sum_vec_perp);
+        WRITEFILES.write_data_variable_files(pt_vec, pt_vec_perp);
         
     }
-
     cout << "Simulation complete! Nice warn.\n" << endl;
 }
 
