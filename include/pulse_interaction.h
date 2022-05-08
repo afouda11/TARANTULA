@@ -8,8 +8,8 @@ public:
 	TDSEUTILITY();
 	~TDSEUTILITY();
 
-	int shell_sample;
-	int band_sample;
+	int fv_sample;
+	int bw_sample;
 	int neqn;
 	int nt;
 	double tstart;
@@ -32,7 +32,7 @@ double icalib(vector<arma::mat> Matrix, vector<vector<double> > mu, std::vector<
 
 void focal_volume_average(double spot_size, vector<vector<double> >& field_strength, vector<double> intensity, int shell_sample);
 
-void bandwidth_average(double bw, std::vector<vector<double> >& gw, std::vector<vector<double> >& wn, std::vector<double> wx, vector<double> bandwidth_avg);
+void bandwidth_average(double bw, std::vector<vector<double> >& gw, std::vector<vector<double> >& wn, std::vector<double> wx, int bw_sample, int bw_extent);
 
 void eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec_avg, vector<double>& norm_t_vec_avg);
 

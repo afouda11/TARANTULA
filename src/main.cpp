@@ -64,16 +64,15 @@ int main()
     if (!BOOL_VEC[5]) {//ONE PULSE
         cout << "1 Pulse caclulcation.\n" << endl;
         vector<double> pulse1;
-        //file2vector("inputs/pulse_1.txt", pulse1);
         fwhm  = vector<double>(1);
         var   = vector<double>(1);
         tmax  = vector<double>(1);
         width = vector<double>(1);
         spot  = vector<double>(1);
-        fwhm[0]  = read_double_options("PULSE_1_FWHM");
-        tmax[0]  = read_double_options("PULSE_1_TMAX");
-		width[0] = read_double_options("PULSE_1_WIDTH");
-		spot[0]  = read_double_options("PULSE_1_SPOT_SIZE");
+        read_options("PULSE_1_FWHM", fwhm[0]);
+        read_options("PULSE_1_TMAX", tmax[0]);
+		read_options("PULSE_1_WIDTH", width[0]);
+		read_options("PULSE_1_SPOT_SIZE", spot[0]);
 		n_pulse = 1;
     }
     if (BOOL_VEC[5]) {//TWO PULSE
@@ -82,21 +81,19 @@ int main()
         cout << "No bandwidth or focal volume averaging current implemented.\n" << endl;
         vector<double> pulse1;
         vector<double> pulse2;
-        //file2vector("inputs/pulse_1.txt", pulse1);
-        //file2vector("inputs/pulse_2.txt", pulse2);
         fwhm  = vector<double>(2);
         var   = vector<double>(2);
         tmax  = vector<double>(2);
         width = vector<double>(2);
         spot  = vector<double>(2);
-        fwhm[0]  = read_double_options("PULSE_1_FWHM"); 
-        fwhm[1]  = read_double_options("PULSE_2_FWHM");
-        tmax[0]  = read_double_options("PULSE_1_TMAX"); 
-        tmax[1]  = read_double_options("PULSE_2_TMAX"); 
-        width[0] = read_double_options("PULSE_1_WIDTH"); 
-        width[1] = read_double_options("PULSE_2_WIDTH"); 
-        spot[0]  = read_double_options("PULSE_1_SPOT_SIZE"); 
-        spot[1]  = read_double_options("PULSE_2_SPOT_SIZE");
+        read_options("PULSE_1_FWHM", fwhm[0]); 
+        read_options("PULSE_2_FWHM", fwhm[1]);
+        read_options("PULSE_1_TMAX", tmax[0]); 
+        read_options("PULSE_2_TMAX", tmax[1]); 
+        read_options("PULSE_1_WIDTH", width[0]); 
+        read_options("PULSE_2_WIDTH", width[1]); 
+        read_options("PULSE_1_SPOT_SIZE", spot[0]); 
+        read_options("PULSE_2_SPOT_SIZE", spot[1]);
 		n_pulse = 2;
     }
     for (int i = 0; i < static_cast<int>(var.size()); i++) {
@@ -107,9 +104,10 @@ int main()
 	//Read and process time information
     vector<double> time_info;
     double tstart;
-    //file2vector("inputs/time_info.txt", time_info);
-    //if (time_info[0] == 0.0) {
-    if (read_double_options("TSTART") == 0.0) {
+	double tend;
+	double dt;
+	read_options("TSTART", tstart);
+    if (tstart == 0.0) {
 		if (BOOL_VEC[1]) {//GAUSSIAN PULSE
         	tstart = tmax[0] - (6 * var[0]); //by default pulse 1 arrives before pulse 2
 		}
@@ -118,19 +116,21 @@ int main()
 		}
     } 
     else {
-        tstart = read_double_options("TSTART") * 41.34137;
+        tstart *= 41.34137;
     }
-    double tend = read_double_options("TEND") * 41.34137;
-    double dt   = read_double_options("DT") * 41.34137;
+    read_options("TEND", tend);
+	tend *= 41.34137;
+    read_options("DT", dt);
+	dt *= 41.34137;
     int nt      = round((tend-tstart)/dt);
-    //int n_print = time_info[3]; //the every nth timestep that get printed
-	int n_print = read_int_options("N_PRINT");
-	//Read in number of states, pairs and groups
-    std::vector<int> n_states;       
-    //file2vector("inputs/n_states.txt", n_states);
-    int neqn       = read_int_options("NEQN");
-    int n_sum_type = read_int_options("N_SUM_TYPE");
-    int n_type     = read_int_options("N_TYPE");
+	int n_print;
+	int neqn;
+	int n_sum_type;
+	int n_type;
+	read_options("N_PRINT", n_print);
+    read_options("NEQN", neqn);
+   	read_options("N_SUM_TYPE", n_sum_type);
+    read_options("N_TYPE", n_type);
 	if (!BOOL_VEC[9]) {
     	cout << "The system involves " << neqn << " electronic states" << endl;
 	}
@@ -161,18 +161,18 @@ int main()
 	vector<vector<double> > mu;
     if (!BOOL_VEC[5]) {//ONE PULSE
         mu = vector<vector<double> >(1, vector<double> (3));
-		mu[0][0] = read_double_options("PULSE_1_MU_X");
-		mu[0][1] = read_double_options("PULSE_1_MU_Y");
-		mu[0][2] = read_double_options("PULSE_1_MU_Z");
+		read_options("PULSE_1_MU_X", mu[0][0]);
+		read_options("PULSE_1_MU_Y", mu[0][1]);
+		read_options("PULSE_1_MU_Z", mu[0][2]);
     }
     if (BOOL_VEC[5]) {//TWO PULSE
         mu = vector<vector<double> >(2, vector<double> (3));
-		mu[0][0] = read_double_options("PULSE_1_MU_X");
-		mu[0][1] = read_double_options("PULSE_1_MU_Y");
-		mu[0][2] = read_double_options("PULSE_1_MU_Z");
-		mu[1][0] = read_double_options("PULSE_2_MU_X");
-		mu[1][1] = read_double_options("PULSE_2_MU_Y");
-		mu[1][2] = read_double_options("PULSE_2_MU_Z");
+		read_options("PULSE_1_MU_X", mu[0][0]);
+		read_options("PULSE_1_MU_Y", mu[0][1]);
+		read_options("PULSE_1_MU_Z", mu[0][2]);
+		read_options("PULSE_2_MU_X", mu[1][0]);
+		read_options("PULSE_2_MU_Y", mu[1][1]);
+		read_options("PULSE_2_MU_Z", mu[1][2]);
     }
 	//TDSE utility object, runs EOM derivatives etc.
 	TDSEUTILITY UTILITYTDSE;
@@ -183,7 +183,8 @@ int main()
     std::vector<vector<double> > wn; //for bandwidth effect and 2 pulse this would need to be a vecvecvec(double)
     std::vector<vector<double> > wx;     
     int n_photon_e  = 1;
-    int band_sample = 1;
+    int bw_sample = 1;
+    int bw_extent;
     if (!BOOL_VEC[5]) {//ONE PULSE
         wx = std::vector<vector<double> >(1);     
         file2vector("inputs/photon_e_1.txt", wx[0]);
@@ -195,24 +196,23 @@ int main()
 		}	
 		cout << "\n";
         if (BOOL_VEC[4]) {//BANDWIDTH AVERAGE
-        	vector<double> bandwidth_avg;
-        	file2vector("inputs/bandwidth_avg.txt", bandwidth_avg);
-            band_sample = bandwidth_avg[0];
+            read_options("BW_SAMPLE_SIZE", bw_sample);
+            read_options("BW_EXTENT", bw_extent);
             double bw = (width[0] / 27.2114) / (2 * pow(2 * log(2), 0.5));
-            gw = std::vector<vector<double> >(n_photon_e, vector<double>(band_sample,  0.0));
-            wn = std::vector<vector<double> >(n_photon_e, vector<double>(band_sample,  0.0));
-            UTILITYTDSE.bandwidth_average(bw, gw, wn, wx[0], bandwidth_avg);
+            gw = std::vector<vector<double> >(n_photon_e, vector<double>(bw_sample,  0.0));
+            wn = std::vector<vector<double> >(n_photon_e, vector<double>(bw_sample,  0.0));
+            UTILITYTDSE.bandwidth_average(bw, gw, wn, wx[0], bw_sample, bw_extent);
 			if (BOOL_VEC[16]) {//DEBUG
 				cout << "gw    " << "wn" << endl;
-				for(int i = 0; i < band_sample; i++) {
+				for(int i = 0; i < bw_sample; i++) {
 					cout << gw[0][i] << " " << wn[0][i]*27.2114 << endl;
 				}
 			}
         }
         if (!BOOL_VEC[4]) {//NO BANDWIDTH AVERAGE
             cout << "No Bandwidth effect applied\n" << endl;
-            band_sample = 1;
-            gw = std::vector<vector<double> >(n_photon_e, vector<double>(band_sample,  1.0));
+            bw_sample = 1;
+            gw = std::vector<vector<double> >(n_photon_e, vector<double>(bw_sample,  1.0));
         }
     }
     if (BOOL_VEC[5]) {//TWO PULSE
@@ -227,15 +227,15 @@ int main()
 		cout << wx[1][0] << endl;
 		wx[1][0] /=  27.2114;
         cout << "No Bandwidth effect applied\n" << endl;
-        band_sample = 1;
-        gw = std::vector<vector<double> >(n_photon_e, vector<double>(band_sample,  1.0));
+        bw_sample = 1;
+        gw = std::vector<vector<double> >(n_photon_e, vector<double>(bw_sample,  1.0));
     }
 
     //Peak intensity and focal volume averaging
     std::vector<vector<double> > intensity; //intensity
     vector<vector<vector<double> > > field_strength;	
     int n_intensity  = 1;
-    int shell_sample = 1;
+    int fv_sample = 1;
     double spot_size = spot[0]; //micron
     if (!BOOL_VEC[5]) {//ONE PULSE
         intensity = std::vector<vector<double> >(1);     
@@ -251,17 +251,15 @@ int main()
 		}
 
         if (BOOL_VEC[3]) {//FOCAL VOLUME AVG.
-        	//vector<int> focalvol_avg;
-        	//file2vector("inputs/focalvol_avg.txt", focalvol_avg);
-            shell_sample = read_int_options("FV_SAMPLE_SIZE");;
-            field_strength = vector<vector<vector<double> > > (1,  vector<vector<double> >(n_intensity, vector<double>(shell_sample, 0.0)));
-            UTILITYTDSE.focal_volume_average(spot_size, field_strength[0], intensity[0], shell_sample);
+            read_options("FV_SAMPLE_SIZE", fv_sample);
+            field_strength = vector<vector<vector<double> > > (1, vector<vector<double> >(n_intensity, vector<double>(fv_sample, 0.0)));
+            UTILITYTDSE.focal_volume_average(spot_size, field_strength[0], intensity[0], fv_sample);
         }
         if (!BOOL_VEC[3]) {//NO FOCAL VOLUME AVG.
             cout << "No focal volume effect applied\n" << endl;
-            shell_sample = 1;
-            field_strength = vector<vector<vector<double> > > (1,  vector<vector<double> >(n_intensity, vector<double>(shell_sample, 0.0)));
-            UTILITYTDSE.focal_volume_average(spot_size, field_strength[0], intensity[0], shell_sample);
+            fv_sample = 1;
+            field_strength = vector<vector<vector<double> > > (1, vector<vector<double> >(n_intensity, vector<double>(fv_sample, 0.0)));
+            UTILITYTDSE.focal_volume_average(spot_size, field_strength[0], intensity[0], fv_sample);
         }
     }
     if (BOOL_VEC[5]) {
@@ -274,10 +272,10 @@ int main()
 		cout << "Intensity for pulse 2 (W/cm^2):" << endl;
 		cout << intensity[1][0] << endl;
         cout << "No focal volume effect applied\n" << endl;
-        shell_sample = 1;
-        field_strength = vector<vector<vector<double> > > (2,  vector<vector<double> >(n_intensity, vector<double>(shell_sample, 0.0)));
-        UTILITYTDSE.focal_volume_average(spot_size, field_strength[0], intensity[0], shell_sample); 
-        UTILITYTDSE.focal_volume_average(spot_size, field_strength[1], intensity[1], shell_sample); 
+        fv_sample = 1;
+        field_strength = vector<vector<vector<double> > > (2,  vector<vector<double> >(n_intensity, vector<double>(fv_sample, 0.0)));
+        UTILITYTDSE.focal_volume_average(spot_size, field_strength[0], intensity[0], fv_sample); 
+        UTILITYTDSE.focal_volume_average(spot_size, field_strength[1], intensity[1], fv_sample); 
     }
 
     //Auger decay widths and phtotoionisation cross-sections
@@ -304,9 +302,9 @@ int main()
         n_decay_chan = static_cast<int>(decay_channels.size());
         cout << "Decay amplitude channles included in simulation:\n" << endl;
         for(int i = 0; i < n_decay_chan; i++) {
-            cout << decay_channels[i] << endl;
+        	cout << decay_channels[i] << endl;
         } 
-         cout << "\n";
+        cout << "\n";
 		
         neqn       += neqn       * n_decay_chan;
         n_type     += n_type     * n_decay_chan;
@@ -386,8 +384,8 @@ int main()
 		WRITEFILES.variable = intensity[0];
 		WRITEFILES.varstring = "intensity";
 	}
-	UTILITYTDSE.shell_sample = shell_sample;
-	UTILITYTDSE.band_sample  = band_sample;
+	UTILITYTDSE.fv_sample = fv_sample;
+	UTILITYTDSE.bw_sample = bw_sample;
 	UTILITYTDSE.neqn = neqn;
 	UTILITYTDSE.nt = nt;
 	UTILITYTDSE.tstart = tstart;

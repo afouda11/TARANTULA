@@ -4,6 +4,7 @@
 #include <armadillo>
 #include <iostream>
 #include <iterator>
+#include <sstream>
 #include "vectypedef.hpp"
 
 template <typename T>
@@ -14,10 +15,32 @@ void file2vector(std::string filename, std::vector<T>& vec) {
     copy(start, end, back_inserter(vec));
     return;
 }
-
+template <typename T>
+void read_options(string option, T & result) {
+    string line;
+    ifstream myfile ("inputs/input.dat");
+    vector<string> inputs;
+    if (myfile.is_open()) {
+        while ( getline (myfile,line) ) {
+            istringstream iss(line);
+            copy(istream_iterator<string>(iss),
+            istream_iterator<string>(),
+            back_inserter(inputs));
+        }
+        myfile.close();
+    }
+	int i = 0;
+	stringstream ss;
+    for (vector<string>::iterator t=inputs.begin(); t!=inputs.end(); t++) {
+        if(*t == option) {
+			ss << inputs.at(i+1);
+			ss >> result;
+        }
+		i++;
+    }     
+    return;
+}
 bool read_bool_options(string option);
-int  read_int_options(string option);
-double read_double_options(string option);
 
 arma::mat read_matrix(int n, std::string Diagonal, std::string Off_Diagonal);
 

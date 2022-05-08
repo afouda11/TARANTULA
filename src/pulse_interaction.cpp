@@ -96,32 +96,29 @@ void TDSEUTILITY::focal_volume_average(double spot_size, vector<vector<double> >
             field_strength[i][j]  = pow(field_strength[i][j], 0.5);
         }
     }
-    return;}
+    return;
+}
 
-void TDSEUTILITY::bandwidth_average(double bw, std::vector<vector<double> >& gw, std::vector<vector<double> >& wn, std::vector<double> wx, vector<double> bandwidth_avg)
+void TDSEUTILITY::bandwidth_average(double bw, std::vector<vector<double> >& gw, std::vector<vector<double> >& wn, std::vector<double> wx, int bw_sample, int bw_extent)
 {
 
-	double sample_size = read_int_options("BW_SAMPLE_SIZE");
-	double extent = read_int_options("BW_EXTENT");
     cout << "Sampling " << wx.size() << " central photon energies." << endl;
-    cout << "The " << bw * 27.2114 << " eV " << "bandwith effect will sample " << sample_size << " energies.\n" << endl;
+    cout << "The " << bw * 27.2114 << " eV " << "bandwith effect will sample " << bw_sample << " energies.\n" << endl;
     for(int i = 0; i < static_cast<int>(wx.size()); i++) {
-        double step = ((wx[i] + (extent * bw)) - (wx[i] - (extent * bw))) / sample_size;
+        double step = ((wx[i] + (bw_extent * bw)) - (wx[i] - (bw_extent * bw))) / bw_sample;
 		cout << step << endl;
-        for(int j = 0; j < sample_size; j++) {
+        for(int j = 0; j < bw_sample; j++) {
              wn[i][j] = (wx[i] - (3 * bw)) + (j * step);
              gw[i][j] = exp( (-1 * pow(wn[i][j] - wx[i], 2)) / (2 * pow(bw, 2) ) ) / pow(2 * M_PI * pow(bw, 2), 0.5);
         }
 		if(BOOL_VEC[16]) {//DEBUG
 			double dum = 0.0;
-			for(int j = 0; j < sample_size; j++) {
+			for(int j = 0; j < bw_sample; j++) {
 				dum += gw[i][j] * step;
 			}
 			cout << "weighting integral = " << dum << endl;
 		}	
     }	
-
-
     return;
 }   
 
@@ -164,13 +161,13 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
         wx_[0]             = wx[0][0];
         wx_[1]             = wx[1][0];
     }
-    vector<vector<vector<vec1x > > > pt_vec(shell_sample, vector<vector<vec1x > > (band_sample, vector<vec1x > (neqn, vec1x (nt, complexd(0.0,0.0)))));
+    vector<vector<vector<vec1x > > > pt_vec(fv_sample, vector<vector<vec1x > > (bw_sample, vector<vec1x > (neqn, vec1x (nt, complexd(0.0,0.0)))));
 
-    vector<vector<vector<double> > > norm_t_vec(shell_sample, vector<vector<double> >(band_sample, vector<double>(nt, 0.0)));
+    vector<vector<vector<double> > > norm_t_vec(fv_sample, vector<vector<double> >(bw_sample, vector<double>(nt, 0.0)));
     
   	const complex<double> I(0,1);
     vector<vector<double> > field (wx_.size(), vector<double> (nt, 0.0));
-	vector<vector<vector<double> > > Et (shell_sample, vector<vector<double> > (band_sample, vector<double>(n_pulse, 0.0)));
+	vector<vector<vector<double> > > Et (fv_sample, vector<vector<double> > (bw_sample, vector<double>(n_pulse, 0.0)));
 
 	int n_decay_chan = static_cast<int>(decay_channels.size());
 	int n = neqn / (n_decay_chan+1);
@@ -181,7 +178,7 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 	auger_gamma = vector<vector<double> > (n_pulse, vector<double>(n, 0.0));
 	photo_sigma = vector<vector<double> > (n_pulse, vector<double>(n, 0.0));
 	//photo_gamma = vector<vector<double> > (1, vector<double>(n, 0.0));
-	photo_gamma = vector<vector<vector<vector<double> > > > (shell_sample, vector<vector<vector<double> > > (band_sample, vector<vector<double> >(n_pulse, vector<double>(n, 0.0))));
+	photo_gamma = vector<vector<vector<vector<double> > > > (fv_sample, vector<vector<vector<double> > > (bw_sample, vector<vector<double> >(n_pulse, vector<double>(n, 0.0))));
 
 	if (BOOL_VEC[2]) { //DECAY WIDTHS
 		for(int pulses = 0; pulses < n_pulse; pulses++) {
@@ -195,8 +192,8 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 	EOMDRIVER DRIVEEOM;
 
     #pragma omp parallel for private(DRIVEEOM) collapse(2)
-    for(int a = 0; a < shell_sample; a++) {
-        for(int b = 0; b < band_sample; b++) {
+    for(int a = 0; a < fv_sample; a++) {
+        for(int b = 0; b < bw_sample; b++) {
 
 			DRIVEEOM.n = n;
 			DRIVEEOM.Matrix = Matrix;
@@ -279,30 +276,30 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 
 
 	double dum = 0.0; 
-    for (int b = 0; b < band_sample; b++) {
+    for (int b = 0; b < bw_sample; b++) {
 		dum += gw_[b];
 	}
     //sum the intensiites for avergaing over the focal volume    
     cout << "Sum populations from focal-voulme/bandwidth averaging" << endl;
     for(int i = 0; i<nt; i++) {
         for (int j = 0; j<neqn; j++) {
-            for (int a = 0; a < shell_sample; a++) {
-                for (int b = 0; b < band_sample; b++) {
+            for (int a = 0; a < fv_sample; a++) {
+                for (int b = 0; b < bw_sample; b++) {
                     pt_vec_avg[j][i]  += (pt_vec[a][b][j][i] * gw_[b]);
                 }      
             }
-            pt_vec_avg[j][i] /= (shell_sample * dum);
+            pt_vec_avg[j][i] /= (fv_sample * dum);
 
         }
     }
     for(int i = 0; i<nt; i++) {
-        for (int a = 0; a < shell_sample; a++) {
-            for (int b = 0; b < band_sample; b++) {
+        for (int a = 0; a < fv_sample; a++) {
+            for (int b = 0; b < bw_sample; b++) {
                 norm_t_vec_avg[i] += norm_t_vec[a][b][i];
             }        
         }
 
-        norm_t_vec_avg[i] /= (shell_sample * band_sample);
+        norm_t_vec_avg[i] /= (fv_sample * bw_sample);
     }
     if (BOOL_VEC[11]) {//WRITE FIELD
         if(ei == 0) {

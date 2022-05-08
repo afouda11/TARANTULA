@@ -37,56 +37,6 @@ bool read_bool_options(string option) {
     }     
     return result;
 }
-int read_int_options(string option) {
-	int result;
-    string line;
-    ifstream myfile ("inputs/input.dat");
-    vector<string> bools;
-    if (myfile.is_open()) {
-        while ( getline (myfile,line) ) {
-            istringstream iss(line);
-            copy(istream_iterator<string>(iss),
-            istream_iterator<string>(),
-            back_inserter(bools));
-        }
-        myfile.close();
-    }
-    int i = 0;
-	stringstream ss; 
-    for (vector<string>::iterator t=bools.begin(); t!=bools.end(); t++) {
-        if(*t == option) {
-        	ss << bools.at(i+1);
-			ss >> result;
-        }   
-        i++; 
-    }     
-    return result;
-}	
-double read_double_options(string option) {
-	double result;
-    string line;
-    ifstream myfile ("inputs/input.dat");
-    vector<string> bools;
-    if (myfile.is_open()) {
-        while ( getline (myfile,line) ) {
-            istringstream iss(line);
-            copy(istream_iterator<string>(iss),
-            istream_iterator<string>(),
-            back_inserter(bools));
-        }
-        myfile.close();
-    }
-    int i = 0;
-	stringstream ss; 
-    for (vector<string>::iterator t=bools.begin(); t!=bools.end(); t++) {
-        if(*t == option) {
-        	ss << bools.at(i+1);
-			ss >> result;
-        }   
-        i++; 
-    }     
-    return result;
-}	
 
 
 arma::mat read_matrix(int n, std::string Diagonal, std::string Off_Diagonal) {
