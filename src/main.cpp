@@ -34,7 +34,6 @@ int main()
     BOOL_VEC[3]  = read_bool_options("FOCAL_AVG");
     BOOL_VEC[4]  = read_bool_options("BANDW_AVG");
     BOOL_VEC[5]  = read_bool_options("TWOPULSE");
-    BOOL_VEC[6]  = read_bool_options("PERP_AVG");
     BOOL_VEC[8]  = read_bool_options("PRINT_MAT");
     BOOL_VEC[9]  = read_bool_options("TWOSTATE");
     BOOL_VEC[10] = read_bool_options("STARK");
@@ -46,7 +45,6 @@ int main()
 
 	//Force correct two-state simulation parameters
     if (BOOL_VEC[9]) {//TWO STATE
-		BOOL_VEC[6]  = false;//NO PERPENDICULAR AVERAGE
 		BOOL_VEC[14] = false;//NO INTENSITY CALIBRATION
     }
 
@@ -148,26 +146,33 @@ int main()
     }      
     cout << "Matrix elements read\n" << endl;
 
+	//ORIENTATIONAL AVG.
+	int orient_avg;
+	read_options("ORIENT_AVG", orient_avg);	
 	//Read light polarization vector
 	vector<vector<double> > mu;
     if (!BOOL_VEC[5]) {//ONE PULSE
         mu = vector<vector<double> >(1, vector<double> (3));
-		read_options("PULSE_1_MU_X", mu[0][0]);
-		read_options("PULSE_1_MU_Y", mu[0][1]);
-		read_options("PULSE_1_MU_Z", mu[0][2]);
+		if (orient_avg == 1) {
+			read_options("PULSE_1_MU_X", mu[0][0]);
+			read_options("PULSE_1_MU_Y", mu[0][1]);
+			read_options("PULSE_1_MU_Z", mu[0][2]);
+		}
     }
     if (BOOL_VEC[5]) {//TWO PULSE
         mu = vector<vector<double> >(2, vector<double> (3));
-		read_options("PULSE_1_MU_X", mu[0][0]);
-		read_options("PULSE_1_MU_Y", mu[0][1]);
-		read_options("PULSE_1_MU_Z", mu[0][2]);
-		read_options("PULSE_2_MU_X", mu[1][0]);
-		read_options("PULSE_2_MU_Y", mu[1][1]);
-		read_options("PULSE_2_MU_Z", mu[1][2]);
+		if (orient_avg == 1) {
+			read_options("PULSE_1_MU_X", mu[0][0]);
+			read_options("PULSE_1_MU_Y", mu[0][1]);
+			read_options("PULSE_1_MU_Z", mu[0][2]);
+			read_options("PULSE_2_MU_X", mu[1][0]);
+			read_options("PULSE_2_MU_Y", mu[1][1]);
+			read_options("PULSE_2_MU_Z", mu[1][2]);
+		}
     }
+
 	//TDSE utility object, runs EOM derivatives etc.
 	TDSEUTILITY UTILITYTDSE;
-	UTILITYTDSE.BOOL_VEC = BOOL_VEC;
 
     //Central photon energy and bandwidth sampling
     std::vector<vector<double> > gw; //for bandwidth effect and 2 pulse this would need to be a vecvecvec(double)
@@ -301,7 +306,6 @@ int main()
 	
 	//Sample single or multiple photon energies and or intensities
     int  n_calc = 0;
-    //bool ECALC  = true;
 	BOOL_VEC[15] = true;
     if ( n_intensity > 1 and n_photon_e == 1 ) {
         BOOL_VEC[15] = false;
@@ -340,17 +344,17 @@ int main()
 
     //TDSE vector containers
     vector<double> tf_vec(nt, 0.0);
-    //involves the summed degenerate paris of final states
-    vector<vector<vec1x > > pt_vec(n_calc, vector<vec1x > (neqn, vec1x (nt, complexd(0.0,0.0))));
-    vector<vector<vec1x > > pt_vec_avg(n_calc, vector<vec1x > (neqn, vec1x (nt, complexd(0.0,0.0))));
-    vector<vector<double> > norm_t_vec_avg(n_calc, vector<double> (nt, 0.0));
-    //used only for averging over x and y initated by PEP_AVG
-    vector<vector<vec1x > > pt_vec_avg_perp(n_calc, vector<vec1x > (neqn, vec1x (nt, complexd(0.0,0.0))));
-    vector<vector<vec1x > > pt_vec_perp(n_calc, vector<vec1x > (neqn, vec1x (nt, complexd(0.0,0.0))));
-    vector<vector<double> > norm_t_vec_avg_perp(n_calc, vector<double> (nt, 0.0));
+	vector<vector<vector<vec1x > > > pt_vec;
+	vector<vector<vector<double> > > normt_vec;
+	if (orient_avg == 1) {
+    	pt_vec = vector<vector<vector<vec1x > > > (n_calc, vector<vector<vec1x> > (orient_avg, vector<vec1x > (neqn, vec1x (nt, complexd(0.0,0.0)))));
+    	normt_vec = vector<vector<vector<double> > > (n_calc, vector<vector<double> > (orient_avg, vector<double> (nt, 0.0)));
+	}
+	if (orient_avg == 2 || orient_avg == 3) {//+1 dinemsion. for avg. result
+    	pt_vec = vector<vector<vector<vec1x > > > (n_calc, vector<vector<vec1x> > (orient_avg + 1, vector<vec1x > (neqn, vec1x (nt, complexd(0.0,0.0)))));
+    	normt_vec = vector<vector<vector<double> > > (n_calc, vector<vector<double> > (orient_avg + 1, vector<double> (nt, 0.0)));
+	}
 
-	//vector<bool> *BOOLS;
-	//BOOLS = &BOOL_VEC;
 	//WRITE SUMMED data to files 
 	FILEWRITER WRITEFILES;	
 	WRITEFILES.nt = nt;
@@ -359,6 +363,7 @@ int main()
 	WRITEFILES.n_photon_e = n_photon_e;
 	WRITEFILES.n_calc = n_calc;
 	WRITEFILES.neqn = neqn;
+	WRITEFILES.orient_avg = orient_avg;
 	if (BOOL_VEC[15]) {
 		WRITEFILES.variable = wx[0];
 		WRITEFILES.varstring = "energy";
@@ -384,6 +389,7 @@ int main()
 	UTILITYTDSE.decay_widths = decay_widths;
 	UTILITYTDSE.decay_channels = decay_channels;
 	UTILITYTDSE.n_pulse = n_pulse;
+	UTILITYTDSE.BOOL_VEC = BOOL_VEC;
 
     clock_t startTime;    
     for(int ei = 0; ei < n_calc; ei++) {
@@ -391,41 +397,56 @@ int main()
         //DO THE TDSE
         startTime = clock();    
 
-        UTILITYTDSE.eom_run(ei, tf_vec, pt_vec_avg[ei], norm_t_vec_avg[ei]);
-
-        if(BOOL_VEC[6]) {//PERP_AVG
-            mu[0][0] = 0.0; mu[0][1] = 1.0; mu[0][2] = 0.0;
-            if(BOOL_VEC[5]) {//TWO_PULSE not properly implemented, assumes both pusles perpendicular to z
-                mu[1][0] = 0.0; 
-				mu[1][1] = 1.0; 
-				mu[1][2] = 0.0;
-            }
-			UTILITYTDSE.mu = mu;
-
-            UTILITYTDSE.eom_run(ei, tf_vec, pt_vec_avg_perp[ei], norm_t_vec_avg_perp[ei]);    
-
-            //return to x
+		if (orient_avg == 1) {
+        	UTILITYTDSE.eom_run(ei, tf_vec, pt_vec[ei][0], normt_vec[ei][0]);
+		}
+		if (orient_avg == 2 || orient_avg == 3) {
+            //x
             mu[0][0] = 1.0; 
 			mu[0][1] = 0.0; 
 			mu[0][2] = 0.0;
-            if(BOOL_VEC[5]) {//TWO_PULSE not properly implemented, assumes both pusles perpendicular to z
+            if(BOOL_VEC[5]) {
             	mu[1][0] = 1.0; 
 				mu[1][1] = 0.0; 
 				mu[1][2] = 0.0;
             }
 			UTILITYTDSE.mu = mu;
-        }
+            UTILITYTDSE.eom_run(ei, tf_vec, pt_vec[ei][0], normt_vec[ei][0]);
+            //y
+            mu[0][0] = 0.0; 
+			mu[0][1] = 1.0; 
+			mu[0][2] = 0.0;
+            if(BOOL_VEC[5]) {
+            	mu[1][0] = 0.0; 
+				mu[1][1] = 1.0; 
+				mu[1][2] = 0.0;
+            }
+			UTILITYTDSE.mu = mu;
+            UTILITYTDSE.eom_run(ei, tf_vec, pt_vec[ei][1], normt_vec[ei][1]);  
+
+			if (orient_avg == 3) {
+				//z
+				mu[0][0] = 0.0; 
+				mu[0][1] = 0.0; 
+				mu[0][2] = 1.0;
+				if(BOOL_VEC[5]) {
+					mu[1][0] = 0.0; 
+					mu[1][1] = 0.0; 
+					mu[1][2] = 1.0;
+				}
+				UTILITYTDSE.mu = mu;
+				UTILITYTDSE.eom_run(ei, tf_vec, pt_vec[ei][2], normt_vec[ei][2]);  
+
+			}
+		}
 
         cout << "RK4 Time:\n" << double( clock() - startTime ) / (double)CLOCKS_PER_SEC<< " seconds.\n" << endl;
 
-        pt_vec = pt_vec_avg;
-		pt_vec_perp = pt_vec_avg_perp;
-
 		WRITEFILES.tf_vec = tf_vec;
-		WRITEFILES.write_data_files(convertInt(ei), pt_vec[ei], pt_vec_perp[ei], norm_t_vec_avg[ei], norm_t_vec_avg_perp[ei]);
+		WRITEFILES.write_data_files(convertInt(ei), pt_vec[ei], normt_vec[ei]);
     }
     if (n_calc > 1) { //only for 1 pulse calc over mutiple intensities or energies
-        WRITEFILES.write_data_variable_files(pt_vec, pt_vec_perp);
+        WRITEFILES.write_data_variable_files(pt_vec);
         
     }
     cout << "Simulation complete! Nice warn.\n" << endl;

@@ -62,18 +62,19 @@ public:
 	int n_photon_e;
 	int n_calc;
 	int neqn;
+	int orient_avg;
 	vector<double> variable;
 	string varstring;
 
-void write_data_files(string outfilename, vector<vec1x> pt_vec, vector<vec1x>& pt_vec_perp, vector<double> norm_t_vec_avg, vector<double>& norm_t_vec_avg_perp);
+void write_data_files(string outfilename, vector<vector<vec1x> >& pt_vec, vector<vector<double> >& normt_vec);
 
-void write_data_variable_files(vector<vector<vec1x> > pt_vec, vector<vector<vec1x> > pt_vec_perp);
+void write_data_variable_files(vector<vector<vector<vec1x> > > pt_vec);
 
 private:
 
 void write_data(string outfilename, int ncol, vector<vec1x > pt_vec, vector<double> norm_t_vec, bool GNUPLOT_OUT); 
 
-void write_data_variable(string outfilename, int ncol, vector<vector<vec1x > > pt_vec, bool GNUPLOT_OUT);
+void write_data_variable(string outfilename, int ncol, vector<vector<vector<vec1x > > > pt_vec, int mu, bool GNUPLOT_OUT);
 
 };
 

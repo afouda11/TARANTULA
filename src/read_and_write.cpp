@@ -148,38 +148,60 @@ FILEWRITER::FILEWRITER(){
 FILEWRITER::~FILEWRITER(){
 }
 
-void FILEWRITER::write_data_files(string outfilename, vector<vec1x> pt_vec, vector<vec1x>& pt_vec_perp, vector<double> norm_t_vec_avg, vector<double>& norm_t_vec_avg_perp) {
+void FILEWRITER::write_data_files(string outfilename, vector<vector<vec1x> >& pt_vec, vector<vector<double> >& normt_vec) {
    
-    string outfilepath = "outputs/out/"+outfilename;        
-    write_data(outfilepath+".txt", neqn, pt_vec, norm_t_vec_avg, false);
-    if (BOOL_VEC[6]) {
-        write_data(outfilepath+"_x.txt", neqn, pt_vec, norm_t_vec_avg, false);
-        write_data(outfilepath+"_y.txt", neqn, pt_vec_perp, norm_t_vec_avg_perp, false);
+    string outfilepath = "outputs/"+outfilename;
+	if (orient_avg == 1) {
+    	write_data(outfilepath+".txt", neqn, pt_vec[0], normt_vec[0], false);
+	}
+	if (orient_avg == 2) {
+        write_data(outfilepath+"_x.txt", neqn, pt_vec[0], normt_vec[0], false);
+        write_data(outfilepath+"_y.txt", neqn, pt_vec[1], normt_vec[1], false);
         for (int i = 0; i<nt; i++) {
             for (int j = 0; j<neqn; j++) {
-                 pt_vec_perp[j][i] = (pt_vec_perp[j][i] + pt_vec[j][i]) / 2.0;
+                 pt_vec[2][j][i] = (pt_vec[0][j][i] + pt_vec[1][j][i]) / 2.0;
             }
-            norm_t_vec_avg_perp[i] = (norm_t_vec_avg_perp[i] + norm_t_vec_avg[i]) /2.0;
+            normt_vec[2][i] = (normt_vec[0][i] + normt_vec[1][i]) /2.0;
         }
-        write_data(outfilepath+"_perp.txt", neqn, pt_vec_perp, norm_t_vec_avg_perp, false);         
+        write_data(outfilepath+"_perp_avg.txt", neqn, pt_vec[2], normt_vec[2], false);         
+    }
+	if (orient_avg == 3) {
+        write_data(outfilepath+"_x.txt", neqn, pt_vec[0], normt_vec[0], false);
+        write_data(outfilepath+"_y.txt", neqn, pt_vec[1], normt_vec[1], false);
+        write_data(outfilepath+"_z.txt", neqn, pt_vec[2], normt_vec[1], false);
+        for (int i = 0; i<nt; i++) {
+            for (int j = 0; j<neqn; j++) {
+                 pt_vec[3][j][i] = (pt_vec[0][j][i] + pt_vec[1][j][i] + pt_vec[2][j][i]) / 3.0;
+            }
+            normt_vec[3][i] = (normt_vec[0][i] + normt_vec[1][i] + normt_vec[1][i]) / 3.0;
+        }
+        write_data(outfilepath+"_oreint_avg.txt", neqn, pt_vec[3], normt_vec[3], false);         
     }
 }
 
 
-void FILEWRITER::write_data_variable_files(vector<vector<vec1x> > pt_vec, vector<vector<vec1x> > pt_vec_perp) {
+void FILEWRITER::write_data_variable_files(vector<vector<vector<vec1x> > > pt_vec) {
 
-if (varstring == "energy") { //convert energy to ev for printing
-	for (int i = 0; i < n_photon_e; i++) variable[i] *=  27.2114;
-}
+	if (varstring == "energy") { //convert energy to ev for printing
+		for (int i = 0; i < n_photon_e; i++) variable[i] *=  27.2114;
+	}
     
     cout << "Writing energy/intensity variable data at t_final\n" << endl;
-    string outfilepath = "outputs/out/variable/";
-	write_data_variable(outfilepath+""+varstring+".txt", neqn, pt_vec, false);
-
-    if (BOOL_VEC[6]) { //only averaged reuslt printed
-        outfilepath = "outputs/out/variable/";
-		write_data_variable(outfilepath+""+varstring+"_perp.txt", neqn, pt_vec_perp, false); 
-    }
+    string outfilepath = "outputs/";
+	if (orient_avg == 1) {
+		write_data_variable(outfilepath+""+varstring+"_variable.txt", neqn, pt_vec, 0, false);
+	}
+	if (orient_avg == 2) {
+		write_data_variable(outfilepath+""+varstring+"_variable_x.txt", neqn, pt_vec, 0, false);
+		write_data_variable(outfilepath+""+varstring+"_variable_y.txt", neqn, pt_vec, 1, false);
+		write_data_variable(outfilepath+""+varstring+"_variable_perp.txt", neqn, pt_vec, 2, false);
+	}
+	if (orient_avg == 3) {
+		write_data_variable(outfilepath+""+varstring+"_variable_x.txt", neqn, pt_vec, 0, false);
+		write_data_variable(outfilepath+""+varstring+"_variable_y.txt", neqn, pt_vec, 1, false);
+		write_data_variable(outfilepath+""+varstring+"_variable_z.txt", neqn, pt_vec, 2, false);
+		write_data_variable(outfilepath+""+varstring+"_variable_orient.txt", neqn, pt_vec, 3, false);
+	}
 }    
 
 void FILEWRITER::write_data(string outfilename, int ncol, vector<vec1x > pt_vec, vector<double> norm_t_vec, bool GNUPLOT_OUT) {
@@ -210,7 +232,7 @@ void FILEWRITER::write_data(string outfilename, int ncol, vector<vec1x > pt_vec,
     return;
 }
 
-void FILEWRITER::write_data_variable(string outfilename, int ncol, vector<vector<vec1x > > pt_vec, bool GNUPLOT_OUT) {
+void FILEWRITER::write_data_variable(string outfilename, int ncol, vector<vector<vector<vec1x > > > pt_vec, int mu, bool GNUPLOT_OUT) {
 
     //only works on avaraged over the orientation data
     std::streambuf *coutbuf = std::cout.rdbuf();; //save old buf
@@ -220,13 +242,13 @@ void FILEWRITER::write_data_variable(string outfilename, int ncol, vector<vector
     if (!GNUPLOT_OUT) {
         for(int i = 0; i<n_calc; i++) {
             cout<< variable[i] <<" ";
-            for (int j = 0; j<ncol; j++) cout << pt_vec[i][j][nt-1].real() <<" ";
+            for (int j = 0; j<ncol; j++) cout << pt_vec[i][mu][j][nt-1].real() <<" ";
             cout <<"\n";
         }
     }      
     if (GNUPLOT_OUT) {           
         for (int j = 0; j<ncol; j++) {
-            for(int i = 0; i<n_calc; i++) cout << variable[i] <<" " << pt_vec[i][j][nt-1].real() <<"\n ";
+            for(int i = 0; i<n_calc; i++) cout << variable[i] <<" " << pt_vec[i][mu][j][nt-1].real() <<"\n ";
             cout << "\n " << "\n ";
         }
     }       

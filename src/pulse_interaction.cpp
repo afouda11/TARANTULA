@@ -188,7 +188,6 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 			}
 		}
 	}
-
 	EOMDRIVER DRIVEEOM;
 
     #pragma omp parallel for private(DRIVEEOM) collapse(2)
