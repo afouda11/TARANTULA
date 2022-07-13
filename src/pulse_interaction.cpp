@@ -106,18 +106,21 @@ void TDSEUTILITY::bandwidth_average(double bw, std::vector<vector<double> >& gw,
     cout << "The " << bw * 27.2114 << " eV " << "bandwith effect will sample " << bw_sample << " energies.\n" << endl;
     for(int i = 0; i < static_cast<int>(wx.size()); i++) {
         double step = ((wx[i] + (bw_extent * bw)) - (wx[i] - (bw_extent * bw))) / bw_sample;
-		cout << step << endl;
+		//cout << step << endl;
         for(int j = 0; j < bw_sample; j++) {
              wn[i][j] = (wx[i] - (3 * bw)) + (j * step);
              gw[i][j] = exp( (-1 * pow(wn[i][j] - wx[i], 2)) / (2 * pow(bw, 2) ) ) / pow(2 * M_PI * pow(bw, 2), 0.5);
         }
+		/*
 		if(BOOL_VEC[16]) {//DEBUG
+			cout << "hey" << endl;
 			double dum = 0.0;
 			for(int j = 0; j < bw_sample; j++) {
 				dum += gw[i][j] * step;
 			}
 			cout << "weighting integral = " << dum << endl;
-		}	
+		}
+		*/
     }	
     return;
 }   

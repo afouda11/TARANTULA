@@ -1,0 +1,41 @@
+#BOOLS
+    RWA					false
+	GAUSS				true
+	DECAY				true
+	FOCAL_AVG			false
+	BANDW_AVG			true
+	TWOPULSE			false
+	PRINT_MAT			false
+	TWOSTATE			false
+	STARK				false
+	WRITE_PULSE			false
+	DECAY_AMP       	true
+	ICALIB          	false
+	DEBUG           	true
+#TIME_INFO
+	TSTART				0.0
+	TEND				6.0
+	DT					0.000006
+	N_PRINT				100
+#N_STATES
+	NEQN				9
+#BANDWIDTH_FOCAL_AVG
+	BW_SAMPLE_SIZE		100
+	BW_EXTENT			3
+	FV_SAMPLE_SIZE 		2
+#ORIENTATIONAL AVG. 1=No, 2=Perp, 3=Yes
+	ORIENT_AVG			2
+#PULSE_1_INFO	
+	PULSE_1_FWHM		1.5
+	PULSE_1_TMAX		1.0
+	PULSE_1_WIDTH		1.2
+	PULSE_1_SPOT_SIZE	2.0
+	PULSE_1_MU_X		1.0
+	PULSE_1_MU_Y		0.0
+	PULSE_1_MU_Z		0.0
+
+
+
+
+
+
