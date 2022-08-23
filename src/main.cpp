@@ -1,3 +1,17 @@
+/*
+TARANTULA
+Copyright (C) 2022  Adam E. A. Fouda
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software 
+Foundation, either Version 3 of the License, or (at your option) any later 
+version.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
+PARTICULAR PURPOSE. See the GNU General Public License for more details.
+You should have received a copy of the GNU General Public License along with 
+this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #define _USE_MATH_DEFINES
 #include "read_and_write.h"
 #include "pulse_interaction.h"
@@ -23,7 +37,7 @@
 
 int main()
 {
-    cout << "\n\n*!*!*!* TDSE(RK4) Solver for XFEL experiments *!*!*!*\n\n" << endl;
+cout << "\n\n***T DSE(RK4) Solver for XFEL experiments ***\n\n" << endl;
 
 	//Read in bool options
     vector<bool> BOOL_VEC(17);
@@ -71,8 +85,8 @@ int main()
     }
     if (BOOL_VEC[5]) {//TWO PULSE
         cout << "2 Pulse caclulcation" << endl; 
-		cout << "Currently only 1 intensity and energy for each pulse," << endl;
-        cout << "No bandwidth or focal volume averaging current implemented.\n" << endl;
+		cout << "Only 1 intensity and energy for each pulse," << endl;
+        cout << "BW or FV avg. not implemented.\n" << endl;
         vector<double> pulse1;
         vector<double> pulse2;
         fwhm  = vector<double>(2);
