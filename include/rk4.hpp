@@ -38,25 +38,34 @@ public:
 	~EOMDRIVER();
 
 	int n;
+	int neqn;
+	int neqn_index;
 	vector<arma::mat> Matrix;
 	vector<vector<double> > mu;
 	vector<double> Et;
 	vector<double> wx;
 	vector<vector<double> > auger_gamma;
+	vector<vector<double> > partial_auger_gamma;
 	vector<vector<double> > photo_gamma;
 	vector<string> decay_channels;
 	vector<bool> BOOL_VEC;
 	int n_pulse;
+	
+	vector<vector<double> > E_spawn;
+	std::vector<int> ntbf;
 
-void RK4(vec1x & y, double t0, double tf);
+void RK4(vec1x & y, double t0, double tf, bool spawn);
 
 double Analytical_Population_Loss(double tf, int j, int k);
 //double Numerical_Population_Loss(int i, int j, int k, double dt, vec1x pt);
 void Numerical_Population_Loss(int i, int j, int k, double dt, int nt, complex<double> pt_state, complex<double> & pt_loss, complex<double> pt_loss_prev);
 
+void Numerical_Population_Loss_Spawn(int i, int j, int k, double dt, int nt, complex<double> pt_state, complex<double> & pt_loss, complex<double> pt_loss_prev);
+
 private:
 
 void REQ(double t, vec1x y, vec1x & dydt);
+void REQ_SPAWN(double t, vec1x y, vec1x & dydt);
 
 double Stark_Shift(int state, vector<double> auger_i, vector<double> photo_i, int n);
 

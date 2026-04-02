@@ -177,9 +177,16 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
         wx_[0]             = wx[0][0];
         wx_[1]             = wx[1][0];
     }
-    vector<vector<vector<vec1x > > > pt_vec(fv_sample, vector<vector<vec1x > > (bw_sample, vector<vec1x > (neqn, vec1x (nt, complexd(0.0,0.0)))));
+	//weighting factor in bw averaging 
+	double dum = 0.0; 
+    for (int b = 0; b < bw_sample; b++) {
+		dum += gw_[b];
+	}
 
-    vector<vector<vector<double> > > norm_t_vec(fv_sample, vector<vector<double> >(bw_sample, vector<double>(nt, 0.0)));
+    //vector<vector<vector<vec1x > > > pt_vec(fv_sample, vector<vector<vec1x > > (bw_sample, vector<vec1x > (neqn, vec1x (nt, complexd(0.0,0.0)))));
+    //vector<vector<vector<double> > > norm_t_vec(fv_sample, vector<vector<double> >(bw_sample, vector<double>(nt, 0.0)));
+    vector<vec1x > pt_vec(vector<vec1x > (neqn, vec1x (nt, complexd(0.0,0.0))));
+    vector<double> norm_t_vec(vector<double>(nt, 0.0));
     
   	const complex<double> I(0,1);
     vector<vector<double> > field (wx_.size(), vector<double> (nt, 0.0));
@@ -204,8 +211,8 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 			}
 		}
 	}
-	EOMDRIVER DRIVEEOM;
 
+	EOMDRIVER DRIVEEOM;
     #pragma omp parallel for private(DRIVEEOM) collapse(2)
     for(int a = 0; a < fv_sample; a++) {
         for(int b = 0; b < bw_sample; b++) {
@@ -247,11 +254,12 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 						}
 					}
 				}
-
+				bool spawn = false;
 				DRIVEEOM.photo_gamma = photo_gamma[a][b];
-				DRIVEEOM.RK4(y, t0, tf);
+				DRIVEEOM.RK4(y, t0, tf, spawn);
 
-                if(ei == 0 and a == 0 and b == 0) {
+                //if(ei == 0 and a == 0 and b == 0) {
+                if(a == 0 and b == 0) {
                     for(int pulses = 0; pulses < n_pulse; pulses++) {
                         if(!BOOL_VEC[0]) {//NO RWA
                             field[pulses][i] = Et[a][b][pulses] * cos(wx_[pulses] * tf);
@@ -266,8 +274,8 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 					tf_vec[i] = tf * 0.0241;
 				}
 
-			    norm_t_vec[a][b][i]  = 0.0;
-
+			    norm_t_vec[i]  = 0.0;
+				/*
     		    for (int j = 0; j<n; j++) {                        
 				    pt_vec[a][b][j][i]    = std::norm(y[j]);
 			    }
@@ -285,43 +293,56 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 						}
 					}
 				}
+				*/
+    		    for (int j = 0; j<n; j++) {                        
+				    pt_vec[j][i]    = std::norm(y[j]);
+			    }
+
+    		    for (int j = 0; j < n; j++) {                        
+				    norm_t_vec[i] += pt_vec[j][i].real();
+				}
+				if (BOOL_VEC[13]) { //POPULATION LOSS CHANNELS
+					//cout << "Calculate population loss channel amplitudes" << endl;
+					for(int k = 0; k < n_decay_chan; k++) {
+						for (int j = (n * (k+1)); j < n * (k+2); j++) {
+	
+							DRIVEEOM.Numerical_Population_Loss(i, j, k, dt, nt, pt_vec[j-(n*(k+1))][i], pt_vec[j][i], pt_vec[j][i-1]);
+							norm_t_vec[i]  += pt_vec[j][i].real();
+						}
+					}
+				}
+        		for (int j = 0; j<neqn; j++) {
+                    pt_vec_avg[j][i]  += (pt_vec[j][i] * gw_[b]);
+				}
+                norm_t_vec_avg[i] += norm_t_vec[i];
 			}
 		}
 	}
 
-
-	double dum = 0.0; 
-    for (int b = 0; b < bw_sample; b++) {
-		dum += gw_[b];
-	}
     //sum the intensiites for avergaing over the focal volume    
     cout << "Sum populations from focal-voulme/bandwidth averaging" << endl;
     for(int i = 0; i<nt; i++) {
         for (int j = 0; j<neqn; j++) {
-            for (int a = 0; a < fv_sample; a++) {
+            /*for (int a = 0; a < fv_sample; a++) {
                 for (int b = 0; b < bw_sample; b++) {
                     pt_vec_avg[j][i]  += (pt_vec[a][b][j][i] * gw_[b]);
                 }      
-            }
+            }*/
             pt_vec_avg[j][i] /= (fv_sample * dum);
-
         }
     }
     for(int i = 0; i<nt; i++) {
-        for (int a = 0; a < fv_sample; a++) {
+       /* for (int a = 0; a < fv_sample; a++) {
             for (int b = 0; b < bw_sample; b++) {
                 norm_t_vec_avg[i] += norm_t_vec[a][b][i];
             }        
-        }
-
+        }*/
         norm_t_vec_avg[i] /= (fv_sample * bw_sample);
     }
     if (BOOL_VEC[11]) {//WRITE FIELD
-        if(ei == 0) {
-            for(int n = 0; n < n_pulse; n++) {
-                write_field("outputs/gnu/pulse_"+convertInt(n)+".txt", nt, 100, tf_vec, field[n]);
-            }
-        }
+		for(int n = 0; n < n_pulse; n++) {
+			write_field("outputs/pulse_"+convertInt(n)+"_"+convertInt(ei)+".txt", nt, 100, tf_vec, field[n]);
+		}
     }
     cout << "Sum complete\n" << endl;
 

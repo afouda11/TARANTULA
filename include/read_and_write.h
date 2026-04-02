@@ -28,6 +28,7 @@ void file2vector(std::string filename, std::vector<T>& vec) {
     copy(start, end, back_inserter(vec));
     return;
 }
+
 template <typename T>
 void read_options(string option, T & result) {
     string line;
@@ -53,6 +54,9 @@ void read_options(string option, T & result) {
     }     
     return;
 }
+
+string read_string_options(string option);
+
 bool read_bool_options(string option);
 
 arma::mat read_matrix(int n, std::string Diagonal, std::string Off_Diagonal);
@@ -83,11 +87,20 @@ void write_data_files(string outfilename, vector<vector<vec1x> >& pt_vec, vector
 
 void write_data_variable_files(vector<vector<vector<vec1x> > > pt_vec);
 
+void write_data_files_spawn(vector<vector<vec1x> >& pt_vec, vector<vector<double> >& normt_vec, std::vector<int> ntbf);
+
+void write_data_files_spawn_dat(string outfilename, vector<vector<vector<double> > >& dat_vec, std::vector<int> ntbf);
+
+
 private:
 
 void write_data(string outfilename, int ncol, vector<vec1x > pt_vec, vector<double> norm_t_vec, bool GNUPLOT_OUT); 
 
 void write_data_variable(string outfilename, int ncol, vector<vector<vector<vec1x > > > pt_vec, int mu, bool GNUPLOT_OUT);
+
+void write_data_spawn(string outfilename, vector<vec1x > pt_vec, vector<double> norm_t_vec, int ntbf); 
+
+void write_data_spawn_dat(string outfilename, vector<vector<double> > dat_vec, int ntbf);
 
 };
 

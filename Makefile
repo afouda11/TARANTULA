@@ -1,9 +1,12 @@
 EXEC = tarantula
-CXX = g++      
-OPTS = -O2 -Wall -I
+#CXX = g++      
+CXX = icpc
+OPTS = -std=c++11 -O0 -Wall -I  
+#OPTS = -O0 -Wall -I  
 #CFLAGS = $(OPTS) -larmadillo -fopenmp 
-CFLAGS = $(OPTS) /home/oxygen/FOUDAAE/armadillo-install/include -fopenmp
-CXXFLAGS = -std=c++11
+CFLAGS = $(OPTS) /home/adamfouda/lib/armadillo/armadillo-install/include -fopenmp 
+CXXFLAGS = -std=c++11 -g 
+#CXXFLAGS = -g 
 LDFLAGS = -fopenmp 
 
 INCDIR =./include
@@ -13,7 +16,7 @@ SRCDIR = ./src
 
 CFLAGS += -I$(INCDIR) -I$(SRCDIR)
 
-SOURCES = read_and_write.cpp pulse_interaction.cpp main.cpp rk4.cpp
+SOURCES = read_and_write.cpp pulse_interaction.cpp main.cpp rk4.cpp xfel_tdse.cpp spawn_decay.cpp
 
 _OBJ = $(SOURCES:.cpp=.o)
 OBJ = $(patsubst %,$(OBJDIR)/%,$(_OBJ))
