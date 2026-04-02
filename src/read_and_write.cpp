@@ -22,6 +22,30 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "vectypedef.hpp"
 #include "read_and_write.h"
 
+string read_string_options(string option) {
+    string result;
+    string line;
+    ifstream myfile ("inputs/input.dat");
+    vector<string> options;
+    if (myfile.is_open()) {
+        while ( getline (myfile,line) ) {
+            istringstream iss(line);
+            copy(istream_iterator<string>(iss),
+            istream_iterator<string>(),
+            back_inserter(options));
+        }
+        myfile.close();
+    }
+	int i = 0;
+    for (vector<string>::iterator t=options.begin(); t!=options.end(); t++) {
+        if(*t == option) {
+           result = options.at(i+1);
+		}
+		i++;
+    }     
+    return result;
+}
+
 bool read_bool_options(string option) {
     bool result = false;
     string line;
@@ -245,6 +269,7 @@ void FILEWRITER::write_data(string outfilename, int ncol, vector<vec1x > pt_vec,
     return;
 }
 
+
 void FILEWRITER::write_data_variable(string outfilename, int ncol, vector<vector<vector<vec1x > > > pt_vec, int mu, bool GNUPLOT_OUT) {
 
     //only works on avaraged over the orientation data
@@ -283,6 +308,70 @@ void write_field(string outfilename, int nt, int n_print, vector<double> tf_vec,
     std::cout.rdbuf(coutbuf); //reset to standard output again
     return;
 
+}
+
+void FILEWRITER::write_data_files_spawn(vector<vector<vec1x> >& pt_vec, vector<vector<double> >& normt_vec, std::vector<int> ntbf) 
+{
+	for (int j = 0; j < neqn; j++) { 
+		string outfilepath = "outputs/population_"+convertInt(j);
+		write_data_spawn(outfilepath+".txt", pt_vec[j], normt_vec[0], ntbf[j]);
+	}
+}
+
+void FILEWRITER::write_data_files_spawn_dat(string outfilename, vector<vector<vector<double> > >& dat_vec, std::vector<int> ntbf) 
+{
+	for (int j = 0; j < neqn; j++) { 
+		string outfilepath = "outputs/"+outfilename;
+		write_data_spawn_dat(outfilepath+"_"+convertInt(j)+".txt", dat_vec[j], ntbf[j]);
+	}
+}
+
+//void FILEWRITER::write_data_spawn(string outfilename, std::vector<int> ntbf, vector<vector<vec1x > >pt_vec, vector<double> norm_t_vec) {
+void FILEWRITER::write_data_spawn(string outfilename, vector<vec1x > pt_vec, vector<double> norm_t_vec, int ntbf) {
+    
+    //Write data to files
+    std::streambuf *coutbuf = std::cout.rdbuf();; //save old buf
+    string outfile = outfilename;
+    std::ofstream out(outfile.c_str());
+    std::cout.rdbuf(out.rdbuf());
+	for(int i = 0; i<nt; i++) {
+		if (i % n_print == 0) {
+			cout<< tf_vec[i] <<" ";
+			for (int k = 0; k<ntbf; k++) {
+				if (i % n_print == 0) {
+					cout << pt_vec[k][i].real() <<" ";
+				}
+			}	
+		}
+		cout<< norm_t_vec[i] <<"\n";
+	}
+
+    std::cout.rdbuf(coutbuf); //reset to standard output again
+    return;
+}
+
+//void FILEWRITER::write_data_spawn_dat(string outfilename, std::vector<int> ntbf, vector<vector<vector<double> > > dat_vec) {
+void FILEWRITER::write_data_spawn_dat(string outfilename, vector<vector<double> > dat_vec, int ntbf) {
+    
+    //Write data to files
+    std::streambuf *coutbuf = std::cout.rdbuf();; //save old buf
+    string outfile = outfilename;
+    std::ofstream out(outfile.c_str());
+    std::cout.rdbuf(out.rdbuf());
+	for(int i = 0; i<nt; i++) {
+		if (i % n_print == 0) {
+			cout<< tf_vec[i] <<" ";
+			for (int k = 0; k<ntbf; k++) {
+				if (i % n_print == 0) {
+					cout << dat_vec[k][i] <<" ";
+				}
+			}	
+			cout << "\n";
+		}
+	}
+
+    std::cout.rdbuf(coutbuf); //reset to standard output again
+    return;
 }
 
 

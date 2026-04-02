@@ -34,7 +34,7 @@ EOMDRIVER::EOMDRIVER(){
 EOMDRIVER::~EOMDRIVER(){
 }
 
-void EOMDRIVER::RK4(vec1x & y, double t0, double tf) {
+void EOMDRIVER::RK4(vec1x & y, double t0, double tf, bool spawn) {
   
   double dt = tf - t0;
   double tc = t0 + 0.5* dt;
@@ -49,29 +49,49 @@ void EOMDRIVER::RK4(vec1x & y, double t0, double tf) {
   vec1x  ytemp (n, complexd (0,0) );
   
   // step k1
-  REQ(t0, y, k1);
-  
+  if(!spawn) {
+  	REQ(t0, y, k1);
+  }
+  if(spawn) {
+  	REQ_SPAWN(t0, y, k1);
+  }
+
   for (int i = 0; i< n; i++){
     ytemp[i] = y[i] + dt2*k1[i];
   }
   
   // step k2
-  REQ(tc, ytemp, k2);
-  
+  if(!spawn) {
+  	REQ(tc, ytemp, k2);
+  }
+  if(spawn) {
+  	REQ_SPAWN(tc, ytemp, k2);
+  }
+
   for (int i = 0; i< n; i++){
     ytemp[i] = y[i] + dt2*k2[i];
   }
   
   // step k3
-  REQ(tc, ytemp, k3);
-  
+  if(!spawn) {
+  	REQ(tc, ytemp, k3);
+  }
+  if(spawn) {
+  	REQ_SPAWN(tc, ytemp, k3);
+  }
+
   for (int i = 0; i< n; i++){
     ytemp[i] = y[i] + dt*k3[i];
   }
   
   // step k4
-  REQ(tf, ytemp, k4);
-  
+  if(!spawn) {
+  	REQ(tf, ytemp, k4);
+  }
+  if(spawn) {
+  	REQ_SPAWN(tf, ytemp, k4);
+  }
+
   for (int i = 0; i< n; i++){
     y[i] = y[i] + dt6*(k1[i] + 2.0*k2[i]+ 2.0*k3[i]+ k4[i]);
   }
@@ -168,6 +188,19 @@ void EOMDRIVER::REQ(double t, vec1x y, vec1x & dydt){
 
 }
 
+void EOMDRIVER::REQ_SPAWN(double t, vec1x y, vec1x & dydt){
+
+  	const complex<double> I(0,1);
+	for (int k = 0; k < n; k++) {
+		dydt[k] = (E_spawn[neqn_index][k] - (( I * auger_gamma[0][neqn_index])/2.0)) * y[k];
+		dydt[k] /= I;		
+		//count++;
+	}
+
+    return;
+
+}
+
 double EOMDRIVER::Analytical_Population_Loss(double tf, int j, int k)
 {
 	double gamma = 0.0;
@@ -194,6 +227,7 @@ void EOMDRIVER::Numerical_Population_Loss(int i, int j, int k, double dt, int nt
 	//Use Trapezoidal Rule
 	if (decay_channels[k] == "AUGER" ) {
 		gamma = auger_gamma[0][j-(n*(k+1))];
+		//gamma = auger_gamma[0][0];
 	}
 	if (decay_channels[k] == "PHOTO_TOTAL" ) {
 		gamma = photo_gamma[0][j-(n*(k+1))]; 
@@ -209,6 +243,26 @@ void EOMDRIVER::Numerical_Population_Loss(int i, int j, int k, double dt, int nt
 		pt_loss = pt_loss_prev + (pt_state.real() * (dt/2.0) * gamma);
 	}
 
+	return;
+
+}
+
+void EOMDRIVER::Numerical_Population_Loss_Spawn(int i, int j, int k, double dt, int nt, complex<double> pt_state, complex<double> & pt_loss, complex<double> pt_loss_prev)
+{
+	
+	//cout << "hey" << endl;
+	double gamma = partial_auger_gamma[j][k];
+	//cout << gamma << endl;
+	if (i == 0) {
+		pt_loss = pt_state.real() * (dt/2.0) * gamma;
+	}
+	else if ( (0 < i) && (i < (nt-1))) {
+		pt_loss = pt_loss_prev + (pt_state.real() * 2 * (dt/2.0) * gamma);
+	}
+	else if (i == (nt-1)) {
+		pt_loss = pt_loss_prev + (pt_state.real() * (dt/2.0) * gamma);
+	}
+	
 	return;
 
 }
