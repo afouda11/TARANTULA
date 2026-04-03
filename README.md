@@ -29,7 +29,7 @@ A dual functional C++ code which can:
 
 ## Citation
 
-This code was used for the publications below, if you like the code and/or research, please cite:
+This code was used for these publications, here the full set theoretical and computational details can be found: 
 
 **TDSE_XFEL**
 
@@ -50,6 +50,8 @@ This code was used for the publications below, if you like the code and/or resea
     *J. Chem. Theory Comput.* (2024) 20, 20, 8782-8794
     [https://doi.org/10.1021/acs.jctc.4c00778](https://doi.org/10.1021/acs.jctc.4c00778)
 
+If you like the code and/or research, please give em a cite!
+
 ## Table of contents for this package doc:
 
 1.  [Code Architecture](#code-architecture)
@@ -60,6 +62,7 @@ This code was used for the publications below, if you like the code and/or resea
 6.  [Output Files](#output-files)
 7.  [Examples](#examples)
 
+*This doc is a work in progress, please reach out to me if you have questions about this code*
 ---
 
 ## Code Architecture

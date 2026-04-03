@@ -53,9 +53,6 @@ cout << "\n\n*** Spawning Decay Dynamics Implenetation on AIMD data ***\n\n" << 
  	read_options("TEND",   		tend);
  	read_options("DT",     		dt);
  	read_options("NT_SPAWN",	nt_spawn);
-	//tstart *= 41.34137;
-	//tend   *= 41.34137;
-	//dt     *= 41.34137;
 
 	//number of decay channels from initial state
 	int nchan;
@@ -119,7 +116,6 @@ cout << "\n\n*** Spawning Decay Dynamics Implenetation on AIMD data ***\n\n" << 
 	file2vector("inputs/total_auger_rates.txt", total_auger_gamma[0]);
 	for (int n = 0; n < neqn; n ++) {
 		total_auger_gamma[0][n] /= 27.2114;
-		//total_auger_gamma[0][n] *= 10000;
 	}
 	//partial Auger rate for eachchannel of each step, 1 input file has all the channels in 1 step, determines the
 	//increase in population of the each state the intial state decays too 
@@ -128,7 +124,6 @@ cout << "\n\n*** Spawning Decay Dynamics Implenetation on AIMD data ***\n\n" << 
 		file2vector("inputs/partial_auger_rates_"+convertInt(i)+".txt", partial_auger_gamma[i]);
 		for (int j = 0; j < nchan; j++) {
 			partial_auger_gamma[i][j] /= 27.2114;
-			//partial_auger_gamma[i][j] *= 10000;
 
 		}
 	}
@@ -180,9 +175,6 @@ cout << "\n\n*** Spawning Decay Dynamics Implenetation on AIMD data ***\n\n" << 
 	int ntbf_prev;
 	for (std::size_t i = 0; i < time.size(); ++i) {
 
-		//scale time scale down so it numerically agrees with RK4
-		//double t0 = tstart + i*(dt/10000);
-		//double tf = t0 + dt/10000;
 		
 		double t0 = tstart + i*(dt);
 		double tf = t0 + dt;
@@ -192,8 +184,6 @@ cout << "\n\n*** Spawning Decay Dynamics Implenetation on AIMD data ***\n\n" << 
 		for (int j = 0; j<neqn; j++) {
 			for (int k = 0; k<ntbf[j]; k++) {
 				E_spawn[j][k]  = energy[j][i]; 
-				//E_spawn[j][k]  = 0.0; 
-				//tbf_count++;
 			}
 		}
 		
@@ -265,14 +255,6 @@ cout << "\n\n*** Spawning Decay Dynamics Implenetation on AIMD data ***\n\n" << 
 							//cout << "neqn_count: " << neqn_count << endl;
 							//cout << pt_gain_vec[k].size() << endl;
 						}
-						/*if (n_spawn == 1) {
-							DRIVEEOM.Numerical_Population_Loss_Spawn(i,j,k,dt/10000,nt,pt_vec[0][0][i],pt_gain_vec[k][0][i],pt_gain_vec[k][0][i-1]);
-						}
-						if (n_spawn > 1) {
-							for (int n = 0; n < pt_gain_vec[k].size(); n++) {
-								DRIVEEOM.Numerical_Population_Loss_Spawn(i,j,k,dt/10000,nt,pt_vec[0][0][i],pt_gain_vec[k][n][i],pt_gain_vec[k][n][i-1]);
-							}
-						}*/
 					}
 					if (j > 0) {
 						if (n_spawn == 0) continue;
@@ -290,15 +272,6 @@ cout << "\n\n*** Spawning Decay Dynamics Implenetation on AIMD data ***\n\n" << 
 							for (int n = 0; n < n_spawn; n++) {
 								//DRIVEEOM.Numerical_Population_Loss_Spawn(i,j,k,dt/10000,nt,pt_vec[neqn_count-nchan][n][i],pt_gain_vec[neqn_count-1][n][i],pt_gain_vec[neqn_count-1][n][i-1]);
 								DRIVEEOM.Numerical_Population_Loss_Spawn(i,j,k,dt,nt,pt_vec[neqn_count-nchan][n][i],pt_gain_vec[neqn_count-1][n][i],pt_gain_vec[neqn_count-1][n][i-1]);
-								//if ((i > 0) && (i % nt_spawn == 0) && (n_spawn < n_spawn_max)) {
-									//if (neqn_count == 1) {
-										//cout << n << endl;
-										//pt_gain_vec[neqn_count-1][n][i];
-									//}
-								//}
-								//std::cout << pt_gain_vec[neqn_count-1][n][i] << endl;
-								//std::cout << pt_gain_vec[neqn_count-1][n][i-1] << endl;  
-								//std::cout << y[neqn_count][n] << endl;	
 
 							}
 						}
@@ -576,7 +549,6 @@ cout << "\n\n*** Spawning Decay Dynamics Implenetation on AIMD data ***\n\n" << 
 							if (n_spawn == 1) {
 								R_diff = vector<double>(nt, 0.0);
 								for (std::size_t t = 0; t < time.size(); ++t) {
-									//R_diff[t] = abs(bondl_vec[neqn_count-nchan][n_spawn][i] - bondl[neqn_count][t]);
 									R_diff[t] = abs(bondl_vec[neqn_count-nchan][0][i-1] - bondl[neqn_count][t]);	
 								}
 								auto it = std::min_element(std::begin(R_diff), std::end(R_diff));
@@ -652,24 +624,6 @@ cout << "\n\n*** Spawning Decay Dynamics Implenetation on AIMD data ***\n\n" << 
 				neqn_count++;
 			}
 		}
-		/*for (int j = 0; j<neqn; j++) {
-			for (int k = 0; k<ntbf[j]; k++) {
-
-				if (j == 0) {
-					bondl_vec[j][k][i]  = bondl[j][i];
-					energy_vec[j][k][i] = energy[j][i];
-					charge1_vec[j][k][i] = charge[0][j][i];
-					charge2_vec[j][k][i] = charge[1][j][i];
-				}
-				else if (j > 0 && n_spawn > 0) {
-					bondl_vec[j][k][i] = bondl[j][iR_spawn[j][k]];
-					energy_vec[j][k][i] = energy[j][iR_spawn[j][k]];
-					charge1_vec[j][k][i] = charge[0][j][iR_spawn[j][k]];
-					charge2_vec[j][k][i] = charge[1][j][iR_spawn[j][k]];
-				}
-				iR_spawn[j][k]++;
-			}
-		}*/
 
 		for (int j = 0; j < neqn; j++) {                        
 			for (int k = 0; k<ntbf[j]; k++) {

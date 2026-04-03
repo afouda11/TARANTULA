@@ -124,16 +124,6 @@ void TDSEUTILITY::bandwidth_average(double bw, std::vector<vector<double> >& gw,
              wn[i][j] = (wx[i] - (3 * bw)) + (j * step);
              gw[i][j] = exp( (-1 * pow(wn[i][j] - wx[i], 2)) / (2 * pow(bw, 2) ) ) / pow(2 * M_PI * pow(bw, 2), 0.5);
         }
-		/*
-		if(BOOL_VEC[16]) {//DEBUG
-			cout << "hey" << endl;
-			double dum = 0.0;
-			for(int j = 0; j < bw_sample; j++) {
-				dum += gw[i][j] * step;
-			}
-			cout << "weighting integral = " << dum << endl;
-		}
-		*/
     }	
     return;
 }   
@@ -183,8 +173,6 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 		dum += gw_[b];
 	}
 
-    //vector<vector<vector<vec1x > > > pt_vec(fv_sample, vector<vector<vec1x > > (bw_sample, vector<vec1x > (neqn, vec1x (nt, complexd(0.0,0.0)))));
-    //vector<vector<vector<double> > > norm_t_vec(fv_sample, vector<vector<double> >(bw_sample, vector<double>(nt, 0.0)));
     vector<vec1x > pt_vec(vector<vec1x > (neqn, vec1x (nt, complexd(0.0,0.0))));
     vector<double> norm_t_vec(vector<double>(nt, 0.0));
     
@@ -196,11 +184,9 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 	int n = neqn / (n_decay_chan+1);
 	vector<vector<double> > auger_gamma;
 	vector<vector<double> > photo_sigma;
-	//vector<vector<double> > photo_gamma;
 	vector<vector<vector<vector<double> > > > photo_gamma;
 	auger_gamma = vector<vector<double> > (n_pulse, vector<double>(n, 0.0));
 	photo_sigma = vector<vector<double> > (n_pulse, vector<double>(n, 0.0));
-	//photo_gamma = vector<vector<double> > (1, vector<double>(n, 0.0));
 	photo_gamma = vector<vector<vector<vector<double> > > > (fv_sample, vector<vector<vector<double> > > (bw_sample, vector<vector<double> >(n_pulse, vector<double>(n, 0.0))));
 
 	if (BOOL_VEC[2]) { //DECAY WIDTHS
@@ -275,25 +261,6 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
 				}
 
 			    norm_t_vec[i]  = 0.0;
-				/*
-    		    for (int j = 0; j<n; j++) {                        
-				    pt_vec[a][b][j][i]    = std::norm(y[j]);
-			    }
-
-    		    for (int j = 0; j < n; j++) {                        
-				    norm_t_vec[a][b][i] += pt_vec[a][b][j][i].real();
-				}
-				if (BOOL_VEC[13]) { //POPULATION LOSS CHANNELS
-					//cout << "Calculate population loss channel amplitudes" << endl;
-					for(int k = 0; k < n_decay_chan; k++) {
-						for (int j = (n * (k+1)); j < n * (k+2); j++) {
-	
-							DRIVEEOM.Numerical_Population_Loss(i, j, k, dt, nt, pt_vec[a][b][j-(n*(k+1))][i], pt_vec[a][b][j][i], pt_vec[a][b][j][i-1]);
-							norm_t_vec[a][b][i]  += pt_vec[a][b][j][i].real();
-						}
-					}
-				}
-				*/
     		    for (int j = 0; j<n; j++) {                        
 				    pt_vec[j][i]    = std::norm(y[j]);
 			    }
@@ -323,20 +290,10 @@ void TDSEUTILITY::eom_run(int ei, vector<double>& tf_vec, vector<vec1x >& pt_vec
     cout << "Sum populations from focal-voulme/bandwidth averaging" << endl;
     for(int i = 0; i<nt; i++) {
         for (int j = 0; j<neqn; j++) {
-            /*for (int a = 0; a < fv_sample; a++) {
-                for (int b = 0; b < bw_sample; b++) {
-                    pt_vec_avg[j][i]  += (pt_vec[a][b][j][i] * gw_[b]);
-                }      
-            }*/
             pt_vec_avg[j][i] /= (fv_sample * dum);
         }
     }
     for(int i = 0; i<nt; i++) {
-       /* for (int a = 0; a < fv_sample; a++) {
-            for (int b = 0; b < bw_sample; b++) {
-                norm_t_vec_avg[i] += norm_t_vec[a][b][i];
-            }        
-        }*/
         norm_t_vec_avg[i] /= (fv_sample * bw_sample);
     }
     if (BOOL_VEC[11]) {//WRITE FIELD
