@@ -54,6 +54,8 @@ If you like the code and/or research, please give em a cite!
 
 ## Table of contents for this package doc:
 
+*The docs are a work in progress, please reach out to me if you have questions about this code*
+
 1.  [Code Architecture](#code-architecture)
 2.  [Dependencies](#dependencies)
 3.  [Build Instructions](#build-instructions)
@@ -62,7 +64,6 @@ If you like the code and/or research, please give em a cite!
 6.  [Output Files](#output-files)
 7.  [Examples](#examples)
 
-*This doc is a work in progress, please reach out to me if you have questions about this code*
 ---
 
 ## Code Architecture
