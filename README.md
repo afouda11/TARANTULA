@@ -11,7 +11,7 @@ A dual functional C++ code which can:
         - bandwidth averaging
         - AC-Stark shifts
     - Photon energy and pulse intensity scans
-    - Decay channel populations dynamics with user provided
+    - Decay channel populations dynamics with user provided:
         - Auger-Meitney decay widths
         - photoionization cross-sections
     - 1 or 2 pulse modes configurations with either:
@@ -31,7 +31,8 @@ A dual functional C++ code which can:
 
 This code was used for the publications below, if you like the code and/or research, please cite:
 
-# TDSE_XFEL
+**TDSE_XFEL**
+
 1. **Site-specific generation of excited state wavepackets with high-intensity attosecond x rays**
    A. E. A. Fouda and P. J. Ho,
    *J. Chem. Phys.* (2021) **154**, 224111
@@ -42,7 +43,7 @@ This code was used for the publications below, if you like the code and/or resea
    *Mol. Phys.* (2022) e2133749 
    [https://doi.org/10.1080/00268976.2022.2133749](https://doi.org/10.1080/00268976.2022.2133749)
 
-# SPAWN_DECAY 
+**SPAWN_DECAY** 
 
 1. **Quantum molecular charge-transfer model for multistep Auger–Meitner decay cascade dynamics**
     A. E. A. Fouda, S. H. Southworth and P. J. Ho
@@ -372,12 +373,12 @@ Output files are written to `outputs/`. Columns are whitespace-delimited.
 
 ## Examples
 
-### Example 1: N₂O XFEL TDSE (`examples/n2o_tdse/`)
+### Example 1: N2O XFEL TDSE (`examples/n2o_tdse/`)
 
-Reproduces the N₂O core-excited wavepacket simulation from:
-> A. E. A. Fouda and P. J. Ho, *J. Chem. Phys.* **154**, 224111 (2021)
-
-**Physics**: 9 electronic states, Gaussian pulse (1.5 fs FWHM, 1.2 eV bandwidth), bandwidth averaging (100 points), perpendicular orientational averaging, Auger + photoionisation decay.
+Reproduces the double core-hole XANES N2O wave packet simulation from:
+> A. E. A. Fouda, D. Koulentianos, L. Young, G. Doumy and P. J. Ho, *Mol. Phys.* (2022) e2133749 
+ 
+**Simulation details:**: 9 electronic states, Gaussian pulse (1.5 fs FWHM, 1.2 eV bandwidth), bandwidth averaging (100 points), perpendicular orientational averaging, Auger + photoionisation decay.
 
 ```bash
 cd examples/n2o_tdse
@@ -387,9 +388,10 @@ cd examples/n2o_tdse
 
 ### Example 2: IBr Auger-Meitner Spawning (`examples/ibr_spawn/`)
 
-Demonstrates the multi-step Auger-Meitner decay cascade spawning algorithm for IBr.
+Reproduces IBr multi-step decay cascade dynamics from:
+> A. E. A. Fouda, S. H. Southworth and P. J. Ho, *J. Chem. Theory Comput.* (2024) 20, 20, 8782-8794
 
-**Physics**: 5 electronic states, 2 decay steps, 2 channels per step, TBF spawning every 5000 time steps, using AIMD trajectory data for potential energies and bond lengths.
+**Simulation details**: 5 electronic states, 2 decay steps, 2 channels per step, TBF spawning every 5000 time steps, using AIMD trajectory data for potential energies and bond lengths.
 
 ```bash
 cd examples/ibr_spawn
