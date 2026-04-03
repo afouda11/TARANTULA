@@ -2,7 +2,7 @@
 
 **Xray induced dynamics for the experimental frontier**
 
-A dual functional C++ code which can: 
+A dual functional C++ code for: 
 
 1) **TDSE_XFEL**: Numerical solution of the time-dependent Schrödinger equation (TDSE) to simulate electronic population transfer dynamics in the presence of ultrafast, intense x-rays pulses for an arbitary number of states and decay channels and includes: 
     - Rotating-wave approximation (RWA)
@@ -14,7 +14,7 @@ A dual functional C++ code which can:
     - Decay channel populations dynamics with user provided:
         - Auger-Meitney decay widths
         - photoionization cross-sections
-    - 1 or 2 pulse modes configurations with either:
+    - 1 or 2 pulse mode configurations with either:
         - orientational averaging 
         - perpendicular polariztion 
 
@@ -34,23 +34,20 @@ This code was used for these publications, here the full set theoretical and com
 **TDSE_XFEL**
 
 1. **Site-specific generation of excited state wavepackets with high-intensity attosecond x rays**
-   A. E. A. Fouda and P. J. Ho,
-   *J. Chem. Phys.* (2021) **154**, 224111
-   [https://doi.org/10.1063/5.0050891](https://doi.org/10.1063/5.0050891)
+    - A. E. A. Fouda and P. J. Ho *J. Chem. Phys.* (2021) **154**, 224111
+    - [https://doi.org/10.1063/5.0050891](https://doi.org/10.1063/5.0050891)
 
 2. **Resonant Double-Core Excitations with Ultrafast, Intense Pulses**
-   A. E. A. Fouda, D. Koulentianos, L. Young, G. Doumy and P. J. Ho,
-   *Mol. Phys.* (2022) e2133749 
-   [https://doi.org/10.1080/00268976.2022.2133749](https://doi.org/10.1080/00268976.2022.2133749)
+   - A. E. A. Fouda, D. Koulentianos, L. Young, G. Doumy and P. J. Ho *Mol. Phys.* (2022) e2133749 
+   - [https://doi.org/10.1080/00268976.2022.2133749](https://doi.org/10.1080/00268976.2022.2133749)
 
 **SPAWN_DECAY** 
 
 1. **Quantum molecular charge-transfer model for multistep Auger–Meitner decay cascade dynamics**
-    A. E. A. Fouda, S. H. Southworth and P. J. Ho
-    *J. Chem. Theory Comput.* (2024) 20, 20, 8782-8794
-    [https://doi.org/10.1021/acs.jctc.4c00778](https://doi.org/10.1021/acs.jctc.4c00778)
+    - A. E. A. Fouda, S. H. Southworth and P. J. Ho *J. Chem. Theory Comput.* (2024) 20, 20, 8782-8794
+    - [https://doi.org/10.1021/acs.jctc.4c00778](https://doi.org/10.1021/acs.jctc.4c00778)
 
-If you like the code and/or research, please give em a cite!
+*If this code and/or research is useful/related to your work please give em a cite!*
 
 ## Table of contents for this package doc:
 
