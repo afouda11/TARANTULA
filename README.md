@@ -94,10 +94,6 @@ TARANTULA/
 │       ├── inputs/            # Input data files + AIMD trajectories
 │       ├── outputs/           # Simulation outputs
 │       └── reference/         # Reference outputs for regression testing
-├── tests/
-│   ├── run_tests.sh           # Master regression test script
-│   ├── test_n2o.sh            # Regression test for N₂O example
-│   └── test_ibr.sh            # Regression test for IBr example
 └── Makefile                   # Build system
 ```
 
